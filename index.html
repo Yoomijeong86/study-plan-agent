@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IELTS / TOEFL 스터디플랜</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f7f7f5;
+    --bg-info: #e6f1fb;
+    --bg-success: #eaf3de;
+    --bg-warning: #faeeda;
+    --bg-danger: #fcebeb;
+    --text: #1a1a1a;
+    --text-secondary: #6b6b68;
+    --text-tertiary: #a0a09c;
+    --text-info: #0c447c;
+    --text-success: #27500a;
+    --text-warning: #633806;
+    --border: rgba(0,0,0,0.12);
+    --border-md: rgba(0,0,0,0.22);
+    --border-info: #378add;
+    --border-success: #639922;
+    --r-md: 8px;
+    --r-lg: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1e1e1c;
+      --bg-secondary: #2a2a28;
+      --bg-info: #0c2a45;
+      --bg-success: #172804;
+      --bg-warning: #2a1800;
+      --bg-danger: #2a0a0a;
+      --text: #f0efe8;
+      --text-secondary: #a0a09c;
+      --text-tertiary: #6b6b68;
+      --text-info: #85b7eb;
+      --text-success: #97c459;
+      --text-warning: #ef9f27;
+      --border: rgba(255,255,255,0.1);
+      --border-md: rgba(255,255,255,0.2);
+      --border-info: #378add;
+      --border-success: #639922;
+    }
+  }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 15px; line-height: 1.6; min-height: 100vh; }
+  .container { max-width: 600px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+  .app-title { font-size: 22px; font-weight: 500; margin-bottom: 4px; }
+  .app-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 2rem; }
+
+  /* Step indicator */
+  .step-ind { display: flex; align-items: center; margin-bottom: 1.75rem; }
+  .s-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; flex-shrink: 0; border: 0.5px solid var(--border); background: var(--bg-secondary); color: var(--text-tertiary); transition: all .2s; }
+  .s-dot.active { background: var(--bg-info); color: var(--text-info); border-color: var(--border-info); }
+  .s-dot.done { background: var(--bg-success); color: var(--text-success); border-color: var(--border-success); }
+  .s-line { flex: 1; height: 1px; background: var(--border); }
+  .s-line.done { background: var(--border-success); }
+
+  /* Section */
+  .section-title { font-size: 18px; font-weight: 500; margin-bottom: 4px; }
+  .section-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 1.5rem; }
+
+  /* Field */
+  .field { margin-bottom: 1.25rem; }
+  .label { font-size: 13px; font-weight: 500; display: block; margin-bottom: 6px; }
+  .label-opt { font-size: 11px; font-weight: 400; color: var(--text-secondary); margin-left: 4px; }
+  .sub { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; display: block; }
+
+  /* Radio cards */
+  .radio-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .r-card { border: 0.5px solid var(--border); border-radius: var(--r-md); padding: 9px 16px; cursor: pointer; font-size: 13px; color: var(--text); background: var(--bg); transition: border-color .15s; user-select: none; }
+  .r-card:hover { border-color: var(--border-md); }
+  .r-card.on { border: 1.5px solid var(--border-info); background: var(--bg-info); color: var(--text-info); }
+
+  /* Level cards */
+  .level-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
+  .lv-card { border: 0.5px solid var(--border); border-radius: var(--r-lg); padding: 12px; cursor: pointer; background: var(--bg); transition: border-color .15s; }
+  .lv-card:hover { border-color: var(--border-md); }
+  .lv-card.on { border: 1.5px solid var(--border-info); background: var(--bg-info); }
+  .lv-card.on .lv-name { color: var(--text-info); }
+  .lv-card.on .lv-desc { color: var(--text-info); }
+  .lv-name { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+  .lv-desc { font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
+
+  /* Score slider */
+  .score-row { display: flex; align-items: center; gap: 12px; }
+  .score-val { font-size: 16px; font-weight: 500; min-width: 40px; }
+  input[type=range] { flex: 1; accent-color: var(--border-info); }
+  input[type=date], input[type=number], input[type=time] {
+    border: 0.5px solid var(--border); border-radius: var(--r-md);
+    padding: 8px 10px; font-size: 13px; background: var(--bg); color: var(--text);
+    outline: none;
+  }
+  input[type=date]:focus, input[type=number]:focus, input[type=time]:focus { border-color: var(--border-info); }
+  input[type=date] { width: 100%; }
+
+  /* Day rows */
+  .day-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .tog { width: 40px; height: 22px; border-radius: 11px; border: 0.5px solid var(--border); background: var(--bg-secondary); cursor: pointer; position: relative; flex-shrink: 0; transition: background .15s; }
+  .tog.on { background: var(--bg-info); border-color: var(--border-info); }
+  .tog-k { position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: var(--text-tertiary); transition: left .15s, background .15s; }
+  .tog.on .tog-k { left: 21px; background: var(--text-info); }
+  .day-lbl { font-size: 13px; font-weight: 500; min-width: 24px; }
+  .day-times { display: flex; align-items: center; gap: 6px; flex: 1; transition: opacity .15s; }
+  .tilde { font-size: 13px; color: var(--text-secondary); }
+  .dur { font-size: 12px; color: var(--text-secondary); min-width: 52px; }
+  .rest-box { background: var(--bg-warning); border-radius: var(--r-md); padding: 10px 14px; margin-top: 10px; display: flex; align-items: center; gap: 10px; }
+  .rest-txt { font-size: 13px; color: var(--text-warning); flex: 1; line-height: 1.5; }
+  .rest-chk { width: 16px; height: 16px; cursor: pointer; accent-color: var(--border-info); flex-shrink: 0; }
+
+  /* Plan period cards */
+  .plan-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+  .pl-card { border: 0.5px solid var(--border); border-radius: var(--r-md); padding: 11px 14px; cursor: pointer; background: var(--bg); }
+  .pl-card:hover { border-color: var(--border-md); }
+  .pl-card.on { border: 1.5px solid var(--border-info); background: var(--bg-info); }
+  .pl-card.on .pl-title { color: var(--text-info); }
+  .pl-card.on .pl-desc { color: var(--text-info); }
+  .pl-title { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+  .pl-desc { font-size: 11px; color: var(--text-secondary); }
+  .default-badge { font-size: 10px; background: var(--bg-success); color: var(--text-success); padding: 1px 6px; border-radius: 4px; margin-left: 4px; }
+
+  /* Skill tags */
+  .tag-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tag { border: 0.5px solid var(--border); border-radius: var(--r-md); padding: 7px 14px; cursor: pointer; font-size: 13px; color: var(--text); background: var(--bg); user-select: none; }
+  .tag:hover { border-color: var(--border-md); }
+  .tag.on { border: 1.5px solid var(--border-info); background: var(--bg-info); color: var(--text-info); }
+  .tag.skip-tag { color: var(--text-secondary); }
+  .tag.skip-tag.on { border: 1.5px solid var(--border); background: var(--bg-secondary); color: var(--text-secondary); }
+
+  /* Summary */
+  .summary { background: var(--bg-secondary); border-radius: var(--r-lg); border: 0.5px solid var(--border); padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
+  .sum-row { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; }
+  .sum-row:not(:last-child) { border-bottom: 0.5px solid var(--border); }
+  .sum-k { color: var(--text-secondary); }
+  .sum-v { font-weight: 500; }
+
+  /* Divider */
+  .divider { border: none; border-top: 0.5px solid var(--border); margin: 1.25rem 0; }
+
+  /* Buttons */
+  .btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.5rem; }
+  button { border: 0.5px solid var(--border-md); border-radius: var(--r-md); padding: 9px 20px; font-size: 13px; cursor: pointer; background: var(--bg); color: var(--text); transition: background .15s; }
+  button:hover { background: var(--bg-secondary); }
+  button.primary { background: var(--bg-info); color: var(--text-info); border-color: var(--border-info); }
+  button.primary:hover { opacity: 0.85; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* API Key input */
+  .api-box { background: var(--bg-warning); border-radius: var(--r-lg); border: 0.5px solid var(--border); padding: 1rem 1.25rem; margin-bottom: 1.25rem; }
+  .api-box p { font-size: 13px; color: var(--text-warning); margin-bottom: 8px; line-height: 1.6; }
+  .api-box input { width: 100%; border: 0.5px solid var(--border); border-radius: var(--r-md); padding: 8px 10px; font-size: 13px; background: var(--bg); color: var(--text); font-family: monospace; }
+
+  /* Result */
+  .result-wrap { display: none; }
+  .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+  .result-title { font-size: 18px; font-weight: 500; }
+  .progress-bar-wrap { background: var(--bg-secondary); border-radius: 6px; height: 8px; margin-bottom: 6px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: var(--border-success); border-radius: 6px; transition: width .3s; }
+  .progress-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 1.25rem; }
+  .week-block { margin-bottom: 1.5rem; }
+  .week-title { font-size: 14px; font-weight: 500; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .day-item { border: 0.5px solid var(--border); border-radius: var(--r-lg); padding: 12px 14px; margin-bottom: 8px; background: var(--bg); display: flex; gap: 12px; align-items: flex-start; }
+  .day-item.checked { background: var(--bg-success); border-color: var(--border-success); }
+  .day-item.checked .day-item-title { color: var(--text-success); text-decoration: line-through; opacity: 0.7; }
+  .day-item.checked .day-item-body { opacity: 0.6; }
+  .day-check { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--border-md); cursor: pointer; flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+  .day-item.checked .day-check { background: var(--border-success); border-color: var(--border-success); }
+  .day-check-inner { width: 8px; height: 8px; border-radius: 50%; background: var(--bg); display: none; }
+  .day-item.checked .day-check-inner { display: block; }
+  .day-item-content { flex: 1; }
+  .day-item-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+  .day-item-body { font-size: 13px; color: var(--text-secondary); line-height: 1.6; white-space: pre-wrap; }
+
+  /* Loading */
+  .loading { text-align: center; padding: 3rem 0; display: none; }
+  .loading-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--text-tertiary); margin: 0 3px; animation: bounce 1.2s infinite; }
+  .loading-dot:nth-child(2) { animation-delay: .2s; }
+  .loading-dot:nth-child(3) { animation-delay: .4s; }
+  @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-8px)} }
+  .loading-text { font-size: 13px; color: var(--text-secondary); margin-top: 12px; }
+
+  .hidden { display: none !important; }
+  .chat-btn { margin-top: 1rem; width: 100%; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="app-title">스터디플랜 생성기</div>
+  <p class="app-sub">IELTS · TOEFL 맞춤 학습 플랜을 만들어드려요</p>
+
+  <!-- API Key Box -->
+  <div class="api-box" id="apiBox">
+    <p>Anthropic API 키를 입력하세요. 키는 브라우저에만 저장되며 외부로 전송되지 않아요.<br>
+    API 키는 <a href="https://console.anthropic.com" target="_blank" style="color:var(--text-warning)">console.anthropic.com</a>에서 발급받을 수 있어요.</p>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off">
+  </div>
+
+  <!-- Step Indicator -->
+  <div class="step-ind" id="stepInd">
+    <div class="s-dot active" id="d1">1</div>
+    <div class="s-line" id="l1"></div>
+    <div class="s-dot" id="d2">2</div>
+    <div class="s-line" id="l2"></div>
+    <div class="s-dot" id="d3">3</div>
+  </div>
+
+  <!-- STEP 1 -->
+  <div id="step1">
+    <p class="section-title">시험 정보</p>
+    <p class="section-desc">목표 시험과 현재 영어 레벨을 알려주세요.</p>
+
+    <div class="field">
+      <span class="label">목표 시험</span>
+      <div class="radio-row" id="examGrp">
+        <div class="r-card on" onclick="pick(this,'examGrp')">IELTS</div>
+        <div class="r-card" onclick="pick(this,'examGrp')">TOEFL</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="label">목표 점수</span>
+      <div class="score-row">
+        <input type="range" id="scoreSlider" min="40" max="90" step="5" value="65"
+          oninput="document.getElementById('scoreOut').textContent=fmtScore(this.value)">
+        <span class="score-val" id="scoreOut">6.5</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="label">시험 예정일</span>
+      <input type="date" id="examDate">
+    </div>
+
+    <div class="field">
+      <span class="label">현재 영어 레벨</span>
+      <div class="level-grid" id="levelGrp">
+        <div class="lv-card" onclick="pickLv(this)">
+          <div class="lv-name">입문</div>
+          <div class="lv-desc">기본 인사·숫자 정도. 시험 경험 없음</div>
+        </div>
+        <div class="lv-card on" onclick="pickLv(this)">
+          <div class="lv-name">초급</div>
+          <div class="lv-desc">간단 회화 가능. 토익 등 경험 있음</div>
+        </div>
+        <div class="lv-card" onclick="pickLv(this)">
+          <div class="lv-name">중급</div>
+          <div class="lv-desc">IELTS/TOEFL 응시 이력 있음</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="primary" onclick="goStep(2)">다음 →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div id="step2" class="hidden">
+    <p class="section-title">학습 스케줄</p>
+    <p class="section-desc">공부 가능한 요일과 시간을 입력해 주세요.</p>
+
+    <div class="field">
+      <span class="label">요일별 학습 시간</span>
+      <span class="sub">공부 가능한 요일을 켜고 시작·종료 시간을 설정하세요.</span>
+      <div id="dayRows"></div>
+      <div class="rest-box hidden" id="restBox">
+        <span class="rest-txt">4시간을 초과하는 요일이 있어요.<br>휴식(식사) 시간 30분을 포함할까요?</span>
+        <input type="checkbox" class="rest-chk" id="restChk">
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button onclick="goStep(1)">← 이전</button>
+      <button class="primary" onclick="goStep(3)">다음 →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div id="step3" class="hidden">
+    <p class="section-title">학습 옵션</p>
+    <p class="section-desc">입력하지 않아도 플랜을 만들 수 있어요.</p>
+
+    <div class="field">
+      <span class="label">총 강의 수<span class="label-opt">(선택)</span></span>
+      <span class="sub">전체 강의 수를 입력하면 하루 수강 강의 수를 자동 계산해요.</span>
+      <input type="number" id="lectureCount" min="1" max="500" placeholder="예: 60" style="width:140px">
+    </div>
+
+    <div class="field">
+      <span class="label">플랜 기간</span>
+      <div class="plan-grid" id="planGrp">
+        <div class="pl-card" onclick="pickPlan(this)">
+          <div class="pl-title">1주</div>
+          <div class="pl-desc">오늘부터 7일</div>
+        </div>
+        <div class="pl-card on" onclick="pickPlan(this)">
+          <div class="pl-title">2주 <span class="default-badge">기본값</span></div>
+          <div class="pl-desc">오늘부터 14일</div>
+        </div>
+        <div class="pl-card" onclick="pickPlan(this)">
+          <div class="pl-title">한달</div>
+          <div class="pl-desc">시작일 기준 실제 달력 월 단위</div>
+        </div>
+        <div class="pl-card" onclick="pickPlan(this)">
+          <div class="pl-title">전체기간</div>
+          <div class="pl-desc">시험 예정일까지 전체 설계</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="label">취약 영역<span class="label-opt">(최대 2개, 선택)</span></span>
+      <div class="tag-row" id="skillGrp">
+        <div class="tag" onclick="pickSkill(this)">Listening</div>
+        <div class="tag" onclick="pickSkill(this)">Reading</div>
+        <div class="tag" onclick="pickSkill(this)">Writing</div>
+        <div class="tag" onclick="pickSkill(this)">Speaking</div>
+        <div class="tag skip-tag" onclick="pickSkip(this)">모르겠어요</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="summary">
+      <div class="sum-row"><span class="sum-k">목표 시험</span><span class="sum-v" id="sExam">IELTS</span></div>
+      <div class="sum-row"><span class="sum-k">목표 점수</span><span class="sum-v" id="sScore">6.5</span></div>
+      <div class="sum-row"><span class="sum-k">시험 예정일</span><span class="sum-v" id="sDate">—</span></div>
+      <div class="sum-row"><span class="sum-k">레벨</span><span class="sum-v" id="sLevel">초급</span></div>
+      <div class="sum-row"><span class="sum-k">학습 가능 요일</span><span class="sum-v" id="sDays">—</span></div>
+      <div class="sum-row"><span class="sum-k">플랜 기간</span><span class="sum-v" id="sPlan">2주</span></div>
+    </div>
+
+    <div class="btn-row">
+      <button onclick="goStep(2)">← 이전</button>
+      <button class="primary" id="generateBtn" onclick="generatePlan()">플랜 생성하기</button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading" id="loading">
+    <div>
+      <div class="loading-dot"></div>
+      <div class="loading-dot"></div>
+      <div class="loading-dot"></div>
+    </div>
+    <div class="loading-text" id="loadingText">맞춤 플랜을 생성하고 있어요...</div>
+  </div>
+
+  <!-- Result -->
+  <div class="result-wrap" id="resultWrap">
+    <div class="result-header">
+      <div class="result-title">내 학습 플랜</div>
+      <button onclick="resetApp()" style="font-size:12px;padding:6px 12px">다시 만들기</button>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+    </div>
+    <div class="progress-label" id="progressLabel">완료율 0% (0 / 0일)</div>
+    <div id="planContent"></div>
+    <button class="chat-btn" onclick="openChat()">이 플랜으로 코칭 채팅 시작하기 →</button>
+  </div>
+
+</div>
+
+<script>
+const DAYS = ['월','화','수','목','금','토','일'];
+const DEFAULT_ON = [true,true,true,true,false,true,false];
+const DEFAULT_S = ['20:00','20:00','20:00','20:00','','09:00',''];
+const DEFAULT_E = ['22:00','22:00','22:00','22:00','','14:00',''];
+let dayState = DAYS.map((_,i)=>({on:DEFAULT_ON[i],start:DEFAULT_S[i],end:DEFAULT_E[i]}));
+let checkState = {};
+let totalDays = 0;
+
+const CLAUDE_MD = `# CLAUDE.md — 영어시험 스터디플랜 에이전트 v0.6
+
+## 프로젝트 개요
+이 에이전트는 IELTS 또는 TOEFL 시험을 준비하는 수험생에게 맞춤형 학습 플랜과 단계별 코칭을 제공한다. 인강 수강을 기본 학습 수단으로 전제하며, 강의 1강의 러닝타임은 1시간으로 고정한다.
+
+## 핵심 제약 조건
+- 어떤 요일이든 하루 최대 6시간을 초과하는 플랜은 제시하지 않는다.
+- [조건부] 4시간 초과 요일에만 휴식 30분을 차감한다.
+
+## 취약 과목 시간 배분
+- 1개 선택 → 해당 영역 35%, 나머지 3개 각 21.7%
+- 2개 선택 → 선택된 2개 각 30%, 나머지 2개 각 20%
+- 미선택/모르겠다 → 4개 영역 균등 배분(각 25%)
+
+## 레벨별 플랜 조정
+- 입문 → 기초 설명 포함. 인강 1강 + 복습 중심 구성
+- 초급 → 기초 문제 풀이 포함
+- 중급 → 실전 문제 + 취약 영역 집중
+
+## 출력 규칙
+반드시 아래 JSON 형식으로만 응답하라. 다른 텍스트 없이 JSON만 출력하라.
+강의 1강 = 1시간 고정. 각 day의 schedule은 1시간 단위 블록으로 구성하라.
+휴식 블록은 rest_included가 true인 요일에만 포함하라.
+
+{
+  "weeks": [
+    {
+      "week": 1,
+      "days": [
+        {
+          "date": "월요일",
+          "total_hours": 2,
+          "schedule": "20:00~20:30 전날 강의 복기\\n20:30~21:30 IELTS 인강 1강 수강\\n21:30~22:00 수강 내용 정리 + 어휘 테스트"
+        }
+      ]
+    }
+  ]
+}`;
+
+function fmtScore(v) {
+  const exam = document.querySelector('#examGrp .r-card.on');
+  if(exam && exam.textContent==='TOEFL') return v+'점';
+  return (v/10).toFixed(1);
+}
+
+function pick(el, grpId) {
+  document.getElementById(grpId).querySelectorAll('.r-card').forEach(e=>e.classList.remove('on'));
+  el.classList.add('on');
+  if(grpId==='examGrp') {
+    const isTOEFL = el.textContent==='TOEFL';
+    const sl = document.getElementById('scoreSlider');
+    if(isTOEFL){sl.min=60;sl.max=120;sl.step=5;sl.value=90;}
+    else{sl.min=40;sl.max=90;sl.step=5;sl.value=65;}
+    document.getElementById('scoreOut').textContent=fmtScore(sl.value);
+  }
+}
+
+function pickLv(el) {
+  document.getElementById('levelGrp').querySelectorAll('.lv-card').forEach(e=>e.classList.remove('on'));
+  el.classList.add('on');
+}
+
+function pickPlan(el) {
+  document.getElementById('planGrp').querySelectorAll('.pl-card').forEach(e=>e.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('sPlan').textContent = el.querySelector('.pl-title').textContent.replace('기본값','').trim();
+}
+
+function pickSkill(el) {
+  const skip = document.querySelector('.skip-tag');
+  skip.classList.remove('on');
+  if(el.classList.contains('on')){el.classList.remove('on');return;}
+  const sel = document.querySelectorAll('#skillGrp .tag:not(.skip-tag).on');
+  if(sel.length>=2) return;
+  el.classList.add('on');
+}
+
+function pickSkip(el) {
+  document.querySelectorAll('#skillGrp .tag:not(.skip-tag)').forEach(e=>e.classList.remove('on'));
+  el.classList.toggle('on');
+}
+
+function toggleDay(i) {
+  dayState[i].on = !dayState[i].on;
+  const tog = document.getElementById('tog'+i);
+  tog.classList.toggle('on');
+  const times = document.getElementById('dt'+i);
+  times.style.opacity = dayState[i].on ? '1' : '0.3';
+  times.style.pointerEvents = dayState[i].on ? 'auto' : 'none';
+  checkRest();
+}
+
+function updateTime(i, type, val) {
+  dayState[i][type] = val;
+  document.getElementById('dur'+i).textContent = calcDurStr(dayState[i].start, dayState[i].end);
+  checkRest();
+}
+
+function calcDurMin(s,e) {
+  if(!s||!e) return 0;
+  const [sh,sm]=s.split(':').map(Number);
+  const [eh,em]=e.split(':').map(Number);
+  return (eh*60+em)-(sh*60+sm);
+}
+
+function calcDurStr(s,e) {
+  const m = calcDurMin(s,e);
+  if(m<=0) return '';
+  const h=Math.floor(m/60), mm=m%60;
+  return h>0?(mm>0?`${h}시간 ${mm}분`:`${h}시간`):`${mm}분`;
+}
+
+function checkRest() {
+  const over = dayState.some(d=>d.on && calcDurMin(d.start,d.end)>240);
+  document.getElementById('restBox').classList.toggle('hidden',!over);
+}
+
+function buildDayRows() {
+  const c = document.getElementById('dayRows');
+  c.innerHTML = '';
+  DAYS.forEach((d,i)=>{
+    const row = document.createElement('div');
+    row.className = 'day-row';
+    row.innerHTML = `
+      <div class="tog ${dayState[i].on?'on':''}" id="tog${i}" onclick="toggleDay(${i})"><div class="tog-k"></div></div>
+      <span class="day-lbl">${d}</span>
+      <div class="day-times" id="dt${i}" style="opacity:${dayState[i].on?1:0.3};pointer-events:${dayState[i].on?'auto':'none'}">
+        <input type="time" value="${dayState[i].start}" id="s${i}" onchange="updateTime(${i},'start',this.value)">
+        <span class="tilde">~</span>
+        <input type="time" value="${dayState[i].end}" id="e${i}" onchange="updateTime(${i},'end',this.value)">
+        <span class="dur" id="dur${i}">${calcDurStr(dayState[i].start,dayState[i].end)}</span>
+      </div>`;
+    c.appendChild(row);
+  });
+  checkRest();
+}
+
+function goStep(n) {
+  [1,2,3].forEach(i=>{
+    document.getElementById('step'+i).classList.toggle('hidden',i!==n);
+    const dot = document.getElementById('d'+i);
+    if(i<n){dot.className='s-dot done';dot.textContent='✓';}
+    else if(i===n){dot.className='s-dot active';dot.textContent=i;}
+    else{dot.className='s-dot';dot.textContent=i;}
+    if(i<=2) document.getElementById('l'+i).className='s-line'+(i<n?' done':'');
+  });
+  if(n===2) buildDayRows();
+  if(n===3) updateSummary();
+}
+
+function updateSummary() {
+  const exam = document.querySelector('#examGrp .r-card.on');
+  if(exam) document.getElementById('sExam').textContent = exam.textContent;
+  document.getElementById('sScore').textContent = document.getElementById('scoreOut').textContent;
+  const d = document.getElementById('examDate').value;
+  document.getElementById('sDate').textContent = d ? d.replace(/-/g,'.') : '—';
+  const lv = document.querySelector('#levelGrp .lv-card.on .lv-name');
+  if(lv) document.getElementById('sLevel').textContent = lv.textContent;
+  const onD = DAYS.filter((_,i)=>dayState[i].on);
+  document.getElementById('sDays').textContent = onD.length ? onD.join('·')+'요일' : '—';
+}
+
+function buildUserPrompt() {
+  const exam = document.querySelector('#examGrp .r-card.on')?.textContent || 'IELTS';
+  const score = document.getElementById('scoreOut').textContent;
+  const examDate = document.getElementById('examDate').value || '미정';
+  const level = document.querySelector('#levelGrp .lv-card.on .lv-name')?.textContent || '초급';
+  const lectureCount = document.getElementById('lectureCount').value;
+  const planPeriod = document.querySelector('#planGrp .pl-card.on .pl-title')?.textContent?.replace('기본값','').trim() || '2주';
+  const skills = [...document.querySelectorAll('#skillGrp .tag:not(.skip-tag).on')].map(e=>e.textContent);
+  const skipSkill = document.querySelector('.skip-tag.on');
+  const restIncluded = document.getElementById('restChk')?.checked || false;
+
+  const scheduleLines = DAYS.map((d,i)=>{
+    if(!dayState[i].on) return null;
+    const dur = calcDurMin(dayState[i].start, dayState[i].end);
+    const restNote = restIncluded && dur>240 ? ' (휴식 30분 포함)' : '';
+    return `${d}요일: ${dayState[i].start}~${dayState[i].end} (${calcDurStr(dayState[i].start,dayState[i].end)}${restNote})`;
+  }).filter(Boolean).join('\n');
+
+  return `아래 정보를 바탕으로 맞춤 학습 플랜을 JSON 형식으로 생성해줘.
+
+목표 시험: ${exam}
+목표 점수: ${score}
+시험 예정일: ${examDate}
+현재 레벨: ${level}
+총 강의 수: ${lectureCount ? lectureCount+'강' : '미입력'}
+플랜 기간: ${planPeriod}
+취약 영역: ${skills.length>0 ? skills.join(', ') : (skipSkill?'모르겠다':'미선택')}
+휴식 포함: ${restIncluded ? 'Y (4시간 초과 요일에 30분 차감)' : 'N'}
+휴식 여부: ${restIncluded}
+
+요일별 학습 스케줄:
+${scheduleLines}
+
+위 정보를 반영하여 CLAUDE.md 규칙에 따라 플랜을 생성하라.`;
+}
+
+async function generatePlan() {
+  const apiKey = document.getElementById('apiKeyInput').value.trim();
+  if(!apiKey){alert('API 키를 입력해 주세요.');return;}
+
+  document.getElementById('step3').classList.add('hidden');
+  document.getElementById('stepInd').classList.add('hidden');
+  document.getElementById('apiBox').classList.add('hidden');
+  document.getElementById('loading').style.display='block';
+
+  const loadingMsgs = ['맞춤 플랜을 생성하고 있어요...','요일별 스케줄을 계산 중이에요...','강의 배분을 최적화하고 있어요...'];
+  let mi=0;
+  const lt = setInterval(()=>{document.getElementById('loadingText').textContent=loadingMsgs[mi++%loadingMsgs.length];},2000);
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:4000,
+        system: CLAUDE_MD,
+        messages:[{role:'user',content:buildUserPrompt()}]
+      })
+    });
+    const data = await res.json();
+    clearInterval(lt);
+    document.getElementById('loading').style.display='none';
+
+    if(data.error){throw new Error(data.error.message);}
+    const text = data.content[0].text;
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if(!jsonMatch) throw new Error('플랜 파싱 오류');
+    const plan = JSON.parse(jsonMatch[0]);
+    renderPlan(plan);
+  } catch(e) {
+    clearInterval(lt);
+    document.getElementById('loading').style.display='none';
+    document.getElementById('apiBox').classList.remove('hidden');
+    document.getElementById('stepInd').classList.remove('hidden');
+    document.getElementById('step3').classList.remove('hidden');
+    alert('오류: '+e.message+'\nAPI 키를 확인해 주세요.');
+  }
+}
+
+function renderPlan(plan) {
+  const wrap = document.getElementById('resultWrap');
+  wrap.style.display='block';
+  const content = document.getElementById('planContent');
+  content.innerHTML='';
+  checkState={};
+  totalDays=0;
+
+  plan.weeks.forEach(week=>{
+    const wb = document.createElement('div');
+    wb.className='week-block';
+    wb.innerHTML=`<div class="week-title">${week.week}주차</div>`;
+    week.days.forEach((day,di)=>{
+      totalDays++;
+      const id=`w${week.week}d${di}`;
+      checkState[id]=false;
+      const item=document.createElement('div');
+      item.className='day-item';
+      item.id='item-'+id;
+      item.innerHTML=`
+        <div class="day-check" onclick="toggleCheck('${id}')">
+          <div class="day-check-inner"></div>
+        </div>
+        <div class="day-item-content">
+          <div class="day-item-title">${day.date} · ${day.total_hours}시간</div>
+          <div class="day-item-body">${day.schedule}</div>
+        </div>`;
+      wb.appendChild(item);
+    });
+    content.appendChild(wb);
+  });
+  updateProgress();
+}
+
+function toggleCheck(id) {
+  checkState[id]=!checkState[id];
+  document.getElementById('item-'+id).classList.toggle('checked',checkState[id]);
+  updateProgress();
+}
+
+function updateProgress() {
+  const done = Object.values(checkState).filter(Boolean).length;
+  const pct = totalDays>0 ? Math.round(done/totalDays*100) : 0;
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('progressLabel').textContent=`완료율 ${pct}% (${done} / ${totalDays}일)`;
+}
+
+function openChat() {
+  const plan = document.getElementById('planContent').innerText;
+  const msg = `아래는 내 IELTS/TOEFL 학습 플랜이야. 이 플랜 기반으로 코칭해줘:\n\n${plan}`;
+  if(typeof sendPrompt==='function') sendPrompt(msg);
+  else alert('Claude 대화창에서 이 앱을 실행하면 코칭 채팅을 바로 시작할 수 있어요!');
+}
+
+function resetApp() {
+  document.getElementById('resultWrap').style.display='none';
+  document.getElementById('apiBox').classList.remove('hidden');
+  document.getElementById('stepInd').classList.remove('hidden');
+  goStep(1);
+}
+</script>
+</body>
+</html>
