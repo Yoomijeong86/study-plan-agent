@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>숨은그림찾기</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f7f7f5;
+    --bg-info: #e6f1fb;
+    --bg-success: #eaf3de;
+    --bg-warning: #faeeda;
+    --text: #1a1a1a;
+    --text-secondary: #6b6b68;
+    --text-tertiary: #a0a09c;
+    --text-info: #0c447c;
+    --text-success: #27500a;
+    --accent: #378add;
+    --accent-success: #639922;
+    --border: rgba(0,0,0,0.12);
+    --border-md: rgba(0,0,0,0.22);
+    --r-md: 8px;
+    --r-lg: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1e1e1c;
+      --bg-secondary: #2a2a28;
+      --bg-info: #0c2a45;
+      --bg-success: #172804;
+      --bg-warning: #2a1800;
+      --text: #f0efe8;
+      --text-secondary: #a0a09c;
+      --text-tertiary: #6b6b68;
+      --text-info: #85b7eb;
+      --text-success: #97c459;
+      --accent: #378add;
+      --accent-success: #97c459;
+      --border: rgba(255,255,255,0.1);
+      --border-md: rgba(255,255,255,0.2);
+      --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.2);
+    }
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .container { max-width: 640px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+
+  header { text-align: center; margin-bottom: 1.25rem; }
+  h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
+  .subtitle { color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.15rem; }
+
+  /* HUD */
+  .hud {
+    display: flex; gap: 0.5rem; flex-wrap: wrap;
+    align-items: center; justify-content: center;
+    margin-bottom: 1rem;
+  }
+  .stat {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 0.4rem 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex; align-items: center; gap: 0.35rem;
+  }
+  .stat b { font-variant-numeric: tabular-nums; }
+
+  /* Targets bar */
+  .targets {
+    display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center;
+    margin-bottom: 1rem;
+  }
+  .chip {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.35rem 0.7rem 0.35rem 0.5rem;
+    font-size: 0.85rem; font-weight: 600;
+    transition: all 0.25s ease;
+    user-select: none;
+  }
+  .chip .ic { font-size: 1.05rem; line-height: 1; }
+  .chip.found {
+    background: var(--bg-success);
+    border-color: var(--accent-success);
+    color: var(--text-success);
+    text-decoration: line-through;
+    opacity: 0.75;
+  }
+  .chip.hinted { animation: pulse 0.8s ease 2; }
+
+  /* Scene */
+  .scene-wrap {
+    position: relative;
+    border: 1px solid var(--border-md);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    background: #cfe8c9;
+    touch-action: manipulation;
+  }
+  svg.scene { display: block; width: 100%; height: auto; }
+  .hidden-obj { cursor: pointer; }
+  .hidden-obj.found { pointer-events: none; }
+
+  /* marker ring shown when found */
+  .marker {
+    position: absolute;
+    width: 44px; height: 44px;
+    margin: -22px 0 0 -22px;
+    border: 3px solid var(--accent-success);
+    border-radius: 50%;
+    background: rgba(99,153,34,0.12);
+    pointer-events: none;
+    animation: pop 0.4s cubic-bezier(.2,1.4,.4,1);
+  }
+  .ripple {
+    position: absolute;
+    width: 20px; height: 20px; margin: -10px 0 0 -10px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    pointer-events: none;
+    animation: ripple 0.5s ease-out forwards;
+  }
+
+  /* controls */
+  .controls { display: flex; gap: 0.6rem; justify-content: center; margin-top: 1.1rem; flex-wrap: wrap; }
+  button {
+    font: inherit; font-weight: 600;
+    border: 1px solid var(--border-md);
+    background: var(--bg);
+    color: var(--text);
+    border-radius: var(--r-md);
+    padding: 0.55rem 1.1rem;
+    cursor: pointer;
+    transition: transform 0.08s ease, background 0.15s ease;
+  }
+  button:hover { background: var(--bg-secondary); }
+  button:active { transform: scale(0.96); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  /* overlay */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: flex; align-items: center; justify-content: center;
+    padding: 1rem; z-index: 20;
+    opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+  }
+  .overlay.show { opacity: 1; pointer-events: auto; }
+  .card {
+    background: var(--bg);
+    border-radius: var(--r-lg);
+    padding: 1.75rem 1.5rem;
+    max-width: 360px; width: 100%;
+    text-align: center;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+    transform: translateY(12px) scale(0.97);
+    transition: transform 0.25s cubic-bezier(.2,1,.3,1);
+  }
+  .overlay.show .card { transform: none; }
+  .card h2 { font-size: 1.4rem; margin-bottom: 0.4rem; }
+  .card p { color: var(--text-secondary); margin-bottom: 1.2rem; }
+  .card .big { font-size: 2.4rem; margin-bottom: 0.5rem; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%) translateY(20px);
+    background: var(--text); color: var(--bg);
+    padding: 0.6rem 1.1rem; border-radius: 999px;
+    font-size: 0.9rem; font-weight: 600;
+    opacity: 0; transition: all 0.3s ease; z-index: 30; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @keyframes pop { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes ripple { 0% { transform: scale(0.4); opacity: 1; } 100% { transform: scale(3); opacity: 0; } }
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.12); box-shadow: 0 0 0 4px rgba(55,138,221,0.25); } }
+  .footer { text-align: center; color: var(--text-tertiary); font-size: 0.8rem; margin-top: 1.5rem; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🔍 숨은그림찾기</h1>
+    <p class="subtitle" id="stageTitle">장면 속에 숨은 물건들을 찾아보세요!</p>
+  </header>
+
+  <div class="hud">
+    <div class="stat">📍 <span>스테이지</span> <b id="stageNum">1</b>/<b id="stageTotal">3</b></div>
+    <div class="stat">✅ <span>찾음</span> <b id="foundCount">0</b>/<b id="totalCount">0</b></div>
+    <div class="stat">⏱️ <b id="timer">0:00</b></div>
+    <div class="stat">💡 <span>힌트</span> <b id="hintCount">3</b></div>
+  </div>
+
+  <div class="targets" id="targets"></div>
+
+  <div class="scene-wrap" id="sceneWrap"></div>
+
+  <div class="controls">
+    <button id="hintBtn">💡 힌트</button>
+    <button id="restartBtn">↻ 다시하기</button>
+  </div>
+
+  <p class="footer">물건을 발견하면 화면을 탭하세요 · 모두 찾으면 다음 스테이지로!</p>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="card">
+    <div class="big" id="ovEmoji">🎉</div>
+    <h2 id="ovTitle">스테이지 클리어!</h2>
+    <p id="ovText"></p>
+    <button class="primary" id="ovBtn">다음 스테이지</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- 장면 데이터 ----------
+   각 hidden object는 SVG 마크업 + 이름 + 이모지를 가진다.
+   data-id 로 클릭을 식별한다. 좌표는 viewBox(800x500) 기준. */
+
+const STAGES = [
+  {
+    title: "🌳 숲속 빈터에서 7개를 찾으세요",
+    bg: `
+      <rect width="800" height="500" fill="#bfe3b8"/>
+      <rect y="320" width="800" height="180" fill="#a9d79f"/>
+      <ellipse cx="400" cy="500" rx="520" ry="120" fill="#9bcf8f"/>
+      <!-- 해 -->
+      <circle cx="700" cy="80" r="46" fill="#ffd86b"/>
+      <!-- 구름 -->
+      <g fill="#ffffff" opacity="0.9">
+        <ellipse cx="170" cy="80" rx="60" ry="28"/>
+        <ellipse cx="220" cy="70" rx="45" ry="24"/>
+      </g>
+      <!-- 큰 나무들 -->
+      <g>
+        <rect x="120" y="230" width="34" height="120" rx="10" fill="#8a5a33"/>
+        <circle cx="137" cy="200" r="78" fill="#5fa84e"/>
+        <circle cx="95" cy="225" r="52" fill="#6fb85c"/>
+        <circle cx="185" cy="225" r="52" fill="#6fb85c"/>
+      </g>
+      <g>
+        <rect x="620" y="250" width="40" height="120" rx="10" fill="#7d5230"/>
+        <circle cx="640" cy="215" r="90" fill="#56a046"/>
+        <circle cx="585" cy="245" r="58" fill="#67b257"/>
+        <circle cx="695" cy="245" r="58" fill="#67b257"/>
+      </g>
+      <!-- 덤불 -->
+      <ellipse cx="330" cy="360" rx="70" ry="38" fill="#6cb45a"/>
+      <ellipse cx="500" cy="380" rx="90" ry="42" fill="#62ab50"/>
+      <!-- 꽃들 -->
+      <g>
+        <circle cx="260" cy="430" r="10" fill="#f5b8d0"/><circle cx="260" cy="430" r="4" fill="#fff2a8"/>
+        <circle cx="560" cy="450" r="10" fill="#c6b6f0"/><circle cx="560" cy="450" r="4" fill="#fff2a8"/>
+        <circle cx="420" cy="460" r="9" fill="#f7c873"/>
+      </g>
+    `,
+    objects: [
+      { id:"key", name:"열쇠", emoji:"🔑", x:340, y:352, svg:`<g transform="translate(340,352) rotate(35) scale(0.9)"><circle r="9" fill="none" stroke="#caa23a" stroke-width="5"/><rect x="6" y="-3" width="34" height="6" rx="2" fill="#caa23a"/><rect x="30" y="2" width="6" height="9" fill="#caa23a"/><rect x="22" y="2" width="6" height="9" fill="#caa23a"/></g>` },
+      { id:"star", name:"별", emoji:"⭐", x:137, y:175, svg:`<path d="M137 158 l6 14 16 1 -12 11 4 16 -14 -9 -14 9 4 -16 -12 -11 16 -1 z" fill="#ffd23f" stroke="#e0a800" stroke-width="1.5"/>` },
+      { id:"heart", name:"하트", emoji:"❤️", x:503, y:372, svg:`<path d="M503 384 c-9 -10 -22 -2 -22 8 c0 9 11 16 22 24 c11 -8 22 -15 22 -24 c0 -10 -13 -18 -22 -8 z" fill="#e8607a"/>` },
+      { id:"fish", name:"물고기", emoji:"🐟", x:640, y:330, svg:`<g transform="translate(640,330) rotate(-10)"><ellipse rx="22" ry="13" fill="#6fc3d6"/><path d="M20 0 l16 -10 0 20 z" fill="#6fc3d6"/><circle cx="-10" cy="-3" r="3" fill="#13343b"/></g>` },
+      { id:"bell", name:"종", emoji:"🔔", x:96, y:215, svg:`<g transform="translate(96,215)"><path d="M-13 12 c0 -20 4 -28 13 -30 c9 2 13 10 13 30 z" fill="#f0c14b" stroke="#c79a2e" stroke-width="1.5"/><rect x="-16" y="12" width="32" height="5" rx="2" fill="#c79a2e"/><circle cy="20" r="4" fill="#c79a2e"/></g>` },
+      { id:"mushroom", name:"버섯", emoji:"🍄", x:330, y:355, svg:`<g transform="translate(300,348)"><path d="M-16 0 a16 13 0 0 1 32 0 z" fill="#e35d5b"/><circle cx="-6" cy="-5" r="3" fill="#fff" opacity="0.8"/><circle cx="6" cy="-3" r="2.5" fill="#fff" opacity="0.8"/><rect x="-5" y="0" width="10" height="14" rx="3" fill="#f3ead2"/></g>` },
+      { id:"crown", name:"왕관", emoji:"👑", x:560, y:445, svg:`<g transform="translate(560,448)"><path d="M-18 8 l-3 -20 9 8 6 -14 6 14 9 -8 -3 20 z" fill="#ffcf3f" stroke="#d9a400" stroke-width="1.5"/><circle cx="-12" cy="-14" r="2.5" fill="#e35d5b"/><circle cx="12" cy="-14" r="2.5" fill="#e35d5b"/></g>` },
+    ]
+  },
+  {
+    title: "🏠 아늑한 방 안에서 8개를 찾으세요",
+    bg: `
+      <rect width="800" height="500" fill="#efe2cf"/>
+      <rect y="350" width="800" height="150" fill="#c79a6b"/>
+      <rect y="345" width="800" height="10" fill="#a87c4f"/>
+      <!-- 창문 -->
+      <rect x="60" y="60" width="180" height="150" rx="6" fill="#bfe0f5" stroke="#9c7b52" stroke-width="10"/>
+      <line x1="150" y1="60" x2="150" y2="210" stroke="#9c7b52" stroke-width="6"/>
+      <line x1="60" y1="135" x2="240" y2="135" stroke="#9c7b52" stroke-width="6"/>
+      <!-- 액자 -->
+      <rect x="560" y="80" width="150" height="110" rx="4" fill="#fff" stroke="#9c7b52" stroke-width="8"/>
+      <circle cx="635" cy="120" r="20" fill="#ffd86b"/>
+      <path d="M575 175 l30 -35 25 25 20 -18 25 28 z" fill="#7fb96b"/>
+      <!-- 테이블 -->
+      <rect x="300" y="300" width="320" height="26" rx="6" fill="#a0703f"/>
+      <rect x="320" y="326" width="20" height="80" fill="#8a5d33"/>
+      <rect x="580" y="326" width="20" height="80" fill="#8a5d33"/>
+      <!-- 카펫 -->
+      <ellipse cx="400" cy="440" rx="240" ry="40" fill="#d98c7a" opacity="0.6"/>
+      <!-- 책 더미 -->
+      <rect x="330" y="278" width="70" height="14" rx="2" fill="#5b8def"/>
+      <rect x="336" y="264" width="58" height="14" rx="2" fill="#e36d6d"/>
+      <!-- 화분 -->
+      <g transform="translate(540,270)"><path d="M-18 30 l4 -30 28 0 4 30 z" fill="#c96f4a"/><path d="M0 0 c-18 -6 -26 -22 -14 -30 c8 8 14 16 14 24 c0 -8 6 -16 14 -24 c12 8 4 24 -14 30z" fill="#5ca35a"/></g>
+    `,
+    objects: [
+      { id:"cup", name:"컵", emoji:"☕", x:420, y:288, svg:`<g transform="translate(420,288)"><path d="M-12 -10 h22 v14 a11 9 0 0 1 -22 0 z" fill="#fff" stroke="#b0a18c" stroke-width="2"/><path d="M10 -6 a8 7 0 0 1 0 14" fill="none" stroke="#b0a18c" stroke-width="3"/></g>` },
+      { id:"glasses", name:"안경", emoji:"👓", x:480, y:292, svg:`<g transform="translate(480,294)"><circle cx="-12" r="9" fill="none" stroke="#3a3a3a" stroke-width="3"/><circle cx="12" r="9" fill="none" stroke="#3a3a3a" stroke-width="3"/><line x1="-3" y1="0" x2="3" y2="0" stroke="#3a3a3a" stroke-width="3"/></g>` },
+      { id:"clock", name:"시계", emoji:"⏰", x:150, y:135, svg:`<g transform="translate(150,135)"><circle r="16" fill="#fff" stroke="#9c7b52" stroke-width="3"/><line x1="0" y1="0" x2="0" y2="-9" stroke="#333" stroke-width="2"/><line x1="0" y1="0" x2="7" y2="2" stroke="#333" stroke-width="2"/></g>` },
+      { id:"candle", name:"양초", emoji:"🕯️", x:300, y:280, svg:`<g transform="translate(300,282)"><rect x="-6" y="-6" width="12" height="22" rx="2" fill="#f4ead0"/><path d="M0 -6 c-6 -6 0 -16 0 -16 c0 0 6 10 0 16z" fill="#ffb13f"/></g>` },
+      { id:"sock", name:"양말", emoji:"🧦", x:430, y:430, svg:`<g transform="translate(430,425)"><path d="M-6 -16 h14 v22 c0 6 8 8 14 8 v8 h-22 c-6 0 -6 -6 -6 -10 z" fill="#e36d9c"/></g>` },
+      { id:"button", name:"단추", emoji:"🔘", x:380, y:445, svg:`<g transform="translate(380,445)"><circle r="10" fill="#7b8cde"/><circle cx="-3" cy="-3" r="1.6" fill="#2e3a6b"/><circle cx="3" cy="-3" r="1.6" fill="#2e3a6b"/><circle cx="-3" cy="3" r="1.6" fill="#2e3a6b"/><circle cx="3" cy="3" r="1.6" fill="#2e3a6b"/></g>` },
+      { id:"pencil", name:"연필", emoji:"✏️", x:560, y:294, svg:`<g transform="translate(560,294) rotate(20)"><rect x="-22" y="-4" width="34" height="8" rx="1" fill="#f4c542"/><path d="M12 -4 l10 4 -10 4 z" fill="#e8b85a"/><path d="M18 -1.5 l4 1.5 -4 1.5z" fill="#444"/><rect x="-26" y="-4" width="6" height="8" fill="#e36d6d"/></g>` },
+      { id:"ball", name:"공", emoji:"⚽", x:250, y:425, svg:`<g transform="translate(250,425)"><circle r="16" fill="#fff" stroke="#333" stroke-width="1.5"/><path d="M0 -8 l7 5 -3 9 -8 0 -3 -9z" fill="#333"/></g>` },
+    ]
+  },
+  {
+    title: "🌊 바닷속에서 8개를 찾으세요",
+    bg: `
+      <defs><linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#3aa6d0"/><stop offset="1" stop-color="#1c5e87"/>
+      </linearGradient></defs>
+      <rect width="800" height="500" fill="url(#sea)"/>
+      <!-- 빛 -->
+      <g opacity="0.18" fill="#fff">
+        <path d="M120 0 l60 0 -120 500 -60 0z"/>
+        <path d="M420 0 l50 0 -90 500 -50 0z"/>
+      </g>
+      <!-- 모래 바닥 -->
+      <path d="M0 420 q200 -40 400 0 t400 0 v80 h-800z" fill="#e8d59b"/>
+      <!-- 해초 -->
+      <g fill="#2f8f57">
+        <path d="M120 420 q-15 -50 5 -90 q20 40 8 90z"/>
+        <path d="M150 420 q15 -40 -2 -75 q-18 35 2 75z"/>
+        <path d="M680 420 q-18 -55 6 -100 q22 45 6 100z"/>
+      </g>
+      <!-- 산호 -->
+      <g transform="translate(250,400)" fill="#e8836f"><path d="M0 20 v-30 m0 -8 c-10 0 -12 -14 -2 -18 m2 18 c10 0 14 -12 4 -18" stroke="#e8836f" stroke-width="9" fill="none" stroke-linecap="round"/></g>
+      <!-- 큰 물고기 -->
+      <g transform="translate(560,180)"><ellipse rx="46" ry="28" fill="#f2a93b"/><path d="M40 0 l34 -22 0 44z" fill="#f2a93b"/><circle cx="-22" cy="-6" r="5" fill="#1c2e3b"/><path d="M-46 0 q10 10 0 20" fill="#e89426"/></g>
+      <!-- 거품 -->
+      <g fill="#ffffff" opacity="0.4"><circle cx="600" cy="120" r="6"/><circle cx="620" cy="95" r="4"/><circle cx="180" cy="150" r="5"/></g>
+    `,
+    objects: [
+      { id:"shell", name:"조개", emoji:"🐚", x:300, y:445, svg:`<g transform="translate(300,445)"><path d="M0 12 a18 16 0 0 1 -16 -16 a16 16 0 0 1 32 0 a18 16 0 0 1 -16 16z" fill="#f4c6d0"/><path d="M0 12 v-28 M-8 8 l4 -22 M8 8 l-4 -22" stroke="#d98aa0" stroke-width="1.5" fill="none"/></g>` },
+      { id:"starfish", name:"불가사리", emoji:"⭐", x:480, y:430, svg:`<path d="M480 410 l7 16 18 1 -14 12 5 18 -16 -10 -16 10 5 -18 -14 -12 18 -1z" fill="#f2843b"/>` },
+      { id:"crab", name:"게", emoji:"🦀", x:180, y:440, svg:`<g transform="translate(180,440)"><ellipse ry="9" rx="15" fill="#e0563f"/><circle cx="-5" cy="-3" r="2" fill="#fff"/><circle cx="5" cy="-3" r="2" fill="#fff"/><path d="M-15 0 q-10 -2 -12 -10 M15 0 q10 -2 12 -10" stroke="#e0563f" stroke-width="3" fill="none"/></g>` },
+      { id:"anchor", name:"닻", emoji:"⚓", x:660, y:380, svg:`<g transform="translate(660,378)" stroke="#cfe0ea" stroke-width="3.5" fill="none" stroke-linecap="round"><circle cy="-16" r="5"/><line x1="0" y1="-11" x2="0" y2="16"/><line x1="-10" y1="-4" x2="10" y2="-4"/><path d="M-14 6 q0 12 14 12 q14 0 14 -12"/></g>` },
+      { id:"pearl", name:"진주", emoji:"🫧", x:250, y:400, svg:`<g transform="translate(250,398)"><circle r="8" fill="#fef6fb" stroke="#d6c2cf" stroke-width="1.5"/><circle cx="-2.5" cy="-2.5" r="2" fill="#fff"/></g>` },
+      { id:"key2", name:"열쇠", emoji:"🗝️", x:420, y:455, svg:`<g transform="translate(420,455) rotate(-20)"><circle cx="-14" r="7" fill="none" stroke="#d8c270" stroke-width="4"/><rect x="-8" y="-2.5" width="28" height="5" rx="1.5" fill="#d8c270"/><rect x="14" y="2" width="5" height="8" fill="#d8c270"/><rect x="7" y="2" width="5" height="8" fill="#d8c270"/></g>` },
+      { id:"bottle", name:"유리병", emoji:"🍾", x:130, y:390, svg:`<g transform="translate(130,388) rotate(15)"><rect x="-8" y="-4" width="16" height="26" rx="5" fill="#9fdcc7" opacity="0.85" stroke="#6fb59c" stroke-width="1.5"/><rect x="-4" y="-14" width="8" height="12" rx="2" fill="#9fdcc7" opacity="0.85" stroke="#6fb59c" stroke-width="1.5"/><rect x="-6" y="2" width="12" height="10" fill="#e8d59b" opacity="0.7"/></g>` },
+      { id:"seahorse", name:"해마", emoji:"🐴", x:710, y:300, svg:`<g transform="translate(710,300)" fill="#f0c14b"><path d="M0 -20 q10 -2 8 8 q-2 10 -10 10 q-8 0 -8 10 q0 8 8 12 q-14 2 -16 -10 q-2 -14 8 -18 q-2 -16 10 -22z"/><circle cx="2" cy="-16" r="2" fill="#1c2e3b"/></g>` },
+    ]
+  }
+];
+
+/* ---------- 게임 상태 ---------- */
+let stageIdx = 0;
+let found = new Set();
+let hintsLeft = 3;
+let timerId = null;
+let seconds = 0;
+
+const el = (id) => document.getElementById(id);
+const sceneWrap = el("sceneWrap");
+
+function fmtTime(s){ const m = Math.floor(s/60); const r = s%60; return `${m}:${String(r).padStart(2,'0')}`; }
+
+function startTimer(){
+  stopTimer();
+  timerId = setInterval(()=>{ seconds++; el("timer").textContent = fmtTime(seconds); }, 1000);
+}
+function stopTimer(){ if(timerId){ clearInterval(timerId); timerId = null; } }
+
+function toast(msg){
+  const t = el("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(t._t);
+  t._t = setTimeout(()=> t.classList.remove("show"), 1400);
+}
+
+function renderStage(){
+  const stage = STAGES[stageIdx];
+  found = new Set();
+  hintsLeft = 3;
+  seconds = 0;
+
+  el("stageNum").textContent = stageIdx + 1;
+  el("stageTotal").textContent = STAGES.length;
+  el("stageTitle").textContent = stage.title;
+  el("foundCount").textContent = 0;
+  el("totalCount").textContent = stage.objects.length;
+  el("hintCount").textContent = hintsLeft;
+  el("timer").textContent = "0:00";
+  el("hintBtn").disabled = false;
+
+  // targets chips
+  el("targets").innerHTML = stage.objects.map(o =>
+    `<span class="chip" data-chip="${o.id}"><span class="ic">${o.emoji}</span>${o.name}</span>`
+  ).join("");
+
+  // svg scene
+  const objSvg = stage.objects.map(o =>
+    `<g class="hidden-obj" data-id="${o.id}">${o.svg}</g>`
+  ).join("");
+
+  sceneWrap.innerHTML = `
+    <svg class="scene" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid meet">
+      ${stage.bg}
+      ${objSvg}
+    </svg>`;
+
+  // bind clicks
+  sceneWrap.querySelectorAll(".hidden-obj").forEach(g=>{
+    g.addEventListener("click", onObjClick);
+  });
+  startTimer();
+}
+
+function onObjClick(e){
+  const g = e.currentTarget;
+  const id = g.getAttribute("data-id");
+  if(found.has(id)) return;
+
+  found.add(id);
+  g.classList.add("found");
+
+  // marker at object position
+  placeMarker(g);
+
+  const stage = STAGES[stageIdx];
+  const obj = stage.objects.find(o=>o.id===id);
+  document.querySelector(`[data-chip="${id}"]`)?.classList.add("found");
+  el("foundCount").textContent = found.size;
+  toast(`${obj.emoji} ${obj.name} 발견!`);
+
+  if(found.size === stage.objects.length){
+    stopTimer();
+    setTimeout(showClear, 600);
+  }
+}
+
+function placeMarker(g){
+  // compute object bounding box center -> position in wrap pixels
+  const svg = sceneWrap.querySelector("svg");
+  const wrapRect = sceneWrap.getBoundingClientRect();
+  const r = g.getBoundingClientRect();
+  const cx = r.left - wrapRect.left + r.width/2;
+  const cy = r.top - wrapRect.top + r.height/2;
+  const m = document.createElement("div");
+  m.className = "marker";
+  m.style.left = cx + "px";
+  m.style.top = cy + "px";
+  sceneWrap.appendChild(m);
+}
+
+function showClear(){
+  const last = stageIdx === STAGES.length - 1;
+  el("ovEmoji").textContent = last ? "🏆" : "🎉";
+  el("ovTitle").textContent = last ? "모든 스테이지 완료!" : "스테이지 클리어!";
+  el("ovText").textContent = last
+    ? `축하합니다! 전체를 ${fmtTime(seconds)} 만에 완료했어요.`
+    : `${fmtTime(seconds)} 만에 모두 찾았어요!`;
+  el("ovBtn").textContent = last ? "처음부터 다시" : "다음 스테이지 →";
+  el("overlay").classList.add("show");
+}
+
+function nextStage(){
+  el("overlay").classList.remove("show");
+  const last = stageIdx === STAGES.length - 1;
+  stageIdx = last ? 0 : stageIdx + 1;
+  renderStage();
+}
+
+function useHint(){
+  if(hintsLeft <= 0) return;
+  const stage = STAGES[stageIdx];
+  const remaining = stage.objects.filter(o=>!found.has(o.id));
+  if(remaining.length === 0) return;
+  // 가장 첫 미발견 물건을 잠깐 강조
+  const target = remaining[0];
+  hintsLeft--;
+  el("hintCount").textContent = hintsLeft;
+  if(hintsLeft === 0) el("hintBtn").disabled = true;
+
+  const chip = document.querySelector(`[data-chip="${target.id}"]`);
+  chip?.classList.add("hinted");
+  setTimeout(()=> chip?.classList.remove("hinted"), 1700);
+
+  // 장면 위에 깜빡이는 링 표시
+  const g = sceneWrap.querySelector(`.hidden-obj[data-id="${target.id}"]`);
+  if(g){
+    const wrapRect = sceneWrap.getBoundingClientRect();
+    const r = g.getBoundingClientRect();
+    const cx = r.left - wrapRect.left + r.width/2;
+    const cy = r.top - wrapRect.top + r.height/2;
+    for(let i=0;i<3;i++){
+      setTimeout(()=>{
+        const rp = document.createElement("div");
+        rp.className = "ripple";
+        rp.style.left = cx + "px";
+        rp.style.top = cy + "px";
+        sceneWrap.appendChild(rp);
+        setTimeout(()=> rp.remove(), 600);
+      }, i*250);
+    }
+  }
+  toast(`💡 "${target.name}" 근처를 살펴보세요!`);
+}
+
+el("hintBtn").addEventListener("click", useHint);
+el("restartBtn").addEventListener("click", ()=>{ renderStage(); toast("다시 시작!"); });
+el("ovBtn").addEventListener("click", nextStage);
+
+renderStage();
+</script>
+</body>
+</html>
