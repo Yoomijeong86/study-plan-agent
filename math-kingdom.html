@@ -1,0 +1,1804 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head><body>
+<title>수학 왕국 RPG</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=IBM+Plex+Sans+KR:wght@400;500;700&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400;1,600&display=swap">
+<style>
+/* Layout: 바다 해도 — 단원 섬들이 점선 항로로 이어진 세로 지도, 전투는 몬스터(위) → 문제 → 답(아래) 한 줄 흐름 */
+:root {
+  --sea: #DCEBE8; --sea-2: #CDE2DE; --foam: #EDF5F3; --paper: #F9FCFB;
+  --ink: #10243A; --ink-2: #4A6070; --line: rgba(16, 36, 58, .14);
+  --coral: #D9481F; --on-coral: #FFFFFF; --coral-soft: #FBDCD0;
+  --gold: #A87400; --gold-fill: #F2B705; --gold-soft: #FFEDB3;
+  --hp: #E0383E; --good: #12805B; --good-soft: #D3F0E3; --bad: #C2332F; --bad-soft: #FBE1DF;
+  --sil: #B9CBC8; --smoke: #C6CDD0; --route: rgba(16, 36, 58, .3); --scrim: rgba(6, 16, 24, .45);
+  --f-disp: 'Bagel Fat One', 'Black Han Sans', 'IBM Plex Sans KR', 'Apple SD Gothic Neo', sans-serif;
+  --f-body: 'IBM Plex Sans KR', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --f-math: 'STIX Two Text', 'Cambria Math', 'Times New Roman', serif;
+  --r: 16px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --sea: #0B1A23; --sea-2: #0F222D; --foam: #19323F; --paper: #132A35;
+    --ink: #E4F0EE; --ink-2: #9DB3BA; --line: rgba(228, 240, 238, .14);
+    --coral: #FF7C55; --on-coral: #1C0C05; --coral-soft: #4A2317;
+    --gold: #FFC93C; --gold-fill: #FFC93C; --gold-soft: #3B300D;
+    --hp: #FF5F66; --good: #3CCF96; --good-soft: #0E3A2B; --bad: #FF7A73; --bad-soft: #421A1B;
+    --sil: #2B4550; --smoke: #5C6B72; --route: rgba(228, 240, 238, .26); --scrim: rgba(0, 0, 0, .55);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --sea: #0B1A23; --sea-2: #0F222D; --foam: #19323F; --paper: #132A35;
+  --ink: #E4F0EE; --ink-2: #9DB3BA; --line: rgba(228, 240, 238, .14);
+  --coral: #FF7C55; --on-coral: #1C0C05; --coral-soft: #4A2317;
+  --gold: #FFC93C; --gold-fill: #FFC93C; --gold-soft: #3B300D;
+  --hp: #FF5F66; --good: #3CCF96; --good-soft: #0E3A2B; --bad: #FF7A73; --bad-soft: #421A1B;
+  --sil: #2B4550; --smoke: #5C6B72; --route: rgba(228, 240, 238, .26); --scrim: rgba(0, 0, 0, .55);
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0; background-color: var(--sea); color: var(--ink); font: 15px/1.6 var(--f-body);
+  background-image: radial-gradient(circle at 50% 100%, transparent 8px, var(--sea-2) 8.5px, var(--sea-2) 9.5px, transparent 10px);
+  background-size: 30px 15px; -webkit-tap-highlight-color: transparent;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--paper); }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .45; }
+:focus-visible { outline: 3px solid var(--coral); outline-offset: 2px; }
+h1, h2 { font-family: var(--f-disp); font-weight: 400; text-wrap: balance; margin: 0; letter-spacing: .01em; }
+h1 { font-size: 26px; line-height: 1.2; }
+h2 { font-size: 20px; line-height: 1.25; }
+p { margin: 0; }
+b { font-weight: 700; }
+.muted { color: var(--ink-2); }
+.center { text-align: center; }
+.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.eyebrow { font-size: 12px; letter-spacing: .08em; color: var(--ink-2); font-weight: 500; }
+.sub { color: var(--ink-2); font-size: 13.5px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.sub .ic { width: 15px; height: 15px; fill: var(--gold-fill); stroke: var(--gold-fill); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.row.col { flex-direction: column; align-items: stretch; }
+
+/* 수식 */
+.mx { font-family: var(--f-math); font-size: 1.1em; }
+.mx i { font-style: italic; }
+.fr { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; line-height: 1.12; margin: 0 .1em; font-size: .9em; }
+.fr > span { padding: 0 .18em; }
+.fr > span:first-child { border-bottom: 1.4px solid currentColor; }
+sup { font-size: .68em; line-height: 0; }
+.ov { text-decoration: overline; }
+.data { display: block; margin: 10px 0 2px; padding: 10px 12px; background: var(--foam); border-radius: 12px; text-align: center; font-size: 1.06em; overflow-x: auto; line-height: 1.9; }
+.data .mx { font-size: 1.12em; }
+
+/* 버튼 */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 0 18px; border-radius: 14px; border: 0; background: var(--coral); color: var(--on-coral); font-weight: 700; font-size: 15px; }
+.btn .ic { width: 18px; height: 18px; }
+.btn.big { min-height: 52px; font-size: 17px; flex: 1; }
+.btn.sm { min-height: 36px; padding: 0 12px; font-size: 13.5px; border-radius: 11px; }
+.btn.ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
+.btn.danger { background: var(--bad); color: var(--on-coral); }
+.link { background: none; border: 0; color: var(--coral); font-weight: 700; padding: 6px 0; text-decoration: underline; text-underline-offset: 3px; }
+.icon-btn { width: 42px; height: 42px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--paper); display: grid; place-items: center; flex: none; }
+.pill { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: var(--gold-soft); color: var(--gold); }
+.pill .ic { width: 16px; height: 16px; }
+.pill.done { background: var(--good-soft); color: var(--good); }
+.bar { height: 10px; border-radius: 99px; background: var(--foam); overflow: hidden; border: 1px solid var(--line); }
+.bar > i { display: block; height: 100%; background: var(--coral); border-radius: 99px; transition: width .5s; }
+
+/* HUD + 내비 */
+.hud { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--paper); border-bottom: 1px solid var(--line); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.hud-in { max-width: 560px; margin: 0 auto; display: flex; align-items: center; gap: 10px; padding-block: 8px; }
+.avatar { width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--coral); background: var(--coral-soft); color: var(--coral); display: grid; place-items: center; flex: none; }
+.avatar .ic { width: 24px; height: 24px; }
+.who { flex: 1; min-width: 0; }
+.who .nm { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.who .lv { font-family: var(--f-disp); font-weight: 400; color: var(--coral); font-size: 14px; margin-left: 2px; }
+.who .ttl { font-size: 12px; color: var(--ink-2); line-height: 1.3; }
+.xpbar { height: 6px; border-radius: 9px; background: var(--foam); margin-top: 4px; overflow: hidden; }
+.xpbar i { display: block; height: 100%; background: var(--gold-fill); border-radius: 9px; }
+.res { display: flex; gap: 6px; flex: none; }
+.chip { display: inline-flex; align-items: center; gap: 3px; padding: 4px 9px; border-radius: 999px; background: var(--foam); font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.chip b { color: var(--ink); }
+.chip .ic { width: 16px; height: 16px; }
+.chip.gold .ic { color: var(--gold); }
+.chip.fire .ic { color: var(--coral); fill: var(--coral-soft); }
+.nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--paper); border-top: 1px solid var(--line); display: flex; justify-content: center; padding: 6px max(16px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.nav button { flex: 1; max-width: 112px; background: none; border: 0; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 0; color: var(--ink-2); font-size: 11.5px; font-weight: 500; position: relative; }
+.nav button .ic { width: 23px; height: 23px; }
+.nav button.on { color: var(--coral); }
+.nav em { position: absolute; top: -1px; left: calc(50% + 6px); font-style: normal; background: var(--coral); color: var(--on-coral); font-size: 10.5px; font-weight: 700; min-width: 18px; height: 18px; line-height: 18px; border-radius: 9px; padding: 0 5px; }
+.page { max-width: 560px; margin: 0 auto; padding-top: 14px; padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 14px; }
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+
+/* 지도 */
+.intro { border: 2px solid var(--coral); }
+.intro p { color: var(--ink-2); }
+.quest .q-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.quest .q-num { font-size: 12.5px; color: var(--ink-2); text-align: right; margin-top: -4px; font-variant-numeric: tabular-nums; }
+.quest .bar > i { background: var(--gold-fill); }
+.chart { position: relative; display: flex; flex-direction: column; gap: 2px; padding: 4px 0 8px; }
+.chart::before { content: ""; position: absolute; left: 50%; top: 10px; bottom: 30px; border-left: 3px dashed var(--route); transform: translateX(-50%); }
+.sea-lbl { position: relative; align-self: center; margin: 10px 0 4px; padding: 3px 14px; background: var(--sea); border: 1.5px solid var(--route); border-radius: 999px; font-size: 12.5px; letter-spacing: .12em; color: var(--ink-2); font-weight: 700; }
+.isl { position: relative; display: flex; align-items: center; gap: 2px; width: min(100%, 420px); background: none; border: 0; padding: 0; text-align: left; }
+.isl.l { align-self: flex-start; }
+.isl.r { align-self: flex-end; flex-direction: row-reverse; text-align: right; }
+.isl.final { align-self: center; flex-direction: column; text-align: center; width: min(100%, 340px); }
+.isl.final .isl-txt { align-items: center; }
+.isl.locked .isl-art { filter: grayscale(.9) opacity(.6); }
+.isl-art { width: 128px; height: auto; flex: none; transition: transform .2s; }
+.isl-art.sm { width: 92px; }
+.isl:hover .isl-art { transform: translateY(-3px) rotate(-1deg); }
+.isl-txt { display: flex; flex-direction: column; min-width: 0; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 8px 12px; box-shadow: 0 3px 0 color-mix(in srgb, var(--isl) 50%, transparent); }
+.isl.r .isl-txt { align-items: flex-end; }
+.isl-no { font-family: var(--f-math); font-weight: 600; font-size: 13px; color: var(--isl); line-height: 1.2; }
+.isl-nm { font-family: var(--f-disp); font-size: 17px; line-height: 1.25; }
+.isl-unit { font-size: 12.5px; color: var(--ink-2); line-height: 1.35; }
+.isl-meta { display: flex; gap: 8px; flex-wrap: wrap; font-size: 12px; margin-top: 3px; align-items: center; }
+.isl.r .isl-meta { justify-content: flex-end; }
+.isl-meta .st { display: inline-flex; align-items: center; gap: 2px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.isl-meta .st .ic { width: 14px; height: 14px; fill: var(--gold-fill); stroke: var(--gold-fill); }
+.isl-meta .crown { color: var(--gold); font-weight: 700; }
+.isl-meta .ac { color: var(--ink-2); }
+
+/* 섬 */
+.isl-head { display: flex; align-items: center; gap: 10px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; box-shadow: inset 0 -5px 0 var(--isl); }
+.isl-head > div { min-width: 0; }
+.isl-head h1 { font-size: 22px; }
+.stages { display: flex; flex-direction: column; gap: 10px; }
+.stage { display: flex; align-items: center; gap: 10px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r); padding: 8px 12px 8px 8px; text-align: left; width: 100%; }
+.stage:hover { border-color: var(--isl); }
+.s-mon { width: 64px; height: 64px; flex: none; border-radius: 14px; background: var(--foam); display: grid; place-items: center; }
+.s-mon .mon { width: 58px; height: 58px; }
+.s-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.s-no { font-size: 11.5px; color: var(--ink-2); letter-spacing: .06em; }
+.s-nm { font-weight: 700; font-size: 16px; line-height: 1.3; }
+.s-mn { font-size: 12.5px; color: var(--ink-2); }
+.s-st { display: flex; gap: 1px; flex: none; }
+.s-st .ic { width: 18px; height: 18px; stroke: var(--line); }
+.s-st i.on .ic { fill: var(--gold-fill); stroke: var(--gold-fill); }
+.stage.boss { border: 2px solid var(--isl); }
+.stage.boss .s-nm { font-family: var(--f-disp); font-weight: 400; }
+.stage.locked { border-style: dashed; border-color: var(--line); }
+.stage.locked .s-nm { color: var(--ink-2); }
+.s-lock { color: var(--ink-2); }
+
+/* 오답노트 / 도감 / 기록 / 상점 */
+.pg-head { display: flex; flex-direction: column; gap: 8px; }
+.pg-head p { color: var(--ink-2); }
+.empty { align-items: center; text-align: center; }
+.empty .em-art .mon { width: 110px; height: 110px; }
+.empty p { color: var(--ink-2); max-width: 34ch; }
+.notes { display: flex; flex-direction: column; gap: 12px; }
+.note { background: var(--paper); border: 1px solid var(--line); border-left: 5px solid var(--isl); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.n-top { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+.tag { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: var(--foam); color: var(--ink-2); }
+.n-date { color: var(--ink-2); margin-left: auto; }
+.fix { display: inline-flex; gap: 3px; }
+.fix i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--good); }
+.fix i.on { background: var(--good); }
+.n-q { font-size: 14.5px; }
+.n-ans { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.lbl { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 1px 7px; border-radius: 6px; margin-right: 6px; }
+.lbl.bad { background: var(--bad-soft); color: var(--bad); }
+.lbl.good { background: var(--good-soft); color: var(--good); }
+details summary { cursor: pointer; color: var(--coral); font-weight: 700; font-size: 13.5px; }
+.steps { margin: 6px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.steps li { padding-left: 2px; }
+.dex { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
+.dx { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 8px 6px 10px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1px; }
+.dx .mon { width: 78px; height: 78px; }
+.dx b { font-size: 13px; line-height: 1.3; }
+.dx span { font-size: 11px; color: var(--ink-2); line-height: 1.3; }
+.dx.no b { color: var(--ink-2); }
+.tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+@media (min-width: 520px) { .tiles { grid-template-columns: repeat(4, 1fr); } }
+.tile { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; }
+.tile span { font-size: 12.5px; color: var(--ink-2); }
+.tile b { font-family: var(--f-disp); font-weight: 400; font-size: 26px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.tile small { font-family: var(--f-body); font-size: 13px; color: var(--ink-2); }
+.bars { display: flex; flex-direction: column; gap: 10px; }
+.br { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; align-items: center; }
+.b-nm { font-size: 13.5px; font-weight: 500; }
+.b-v { font-size: 13px; text-align: right; font-variant-numeric: tabular-nums; }
+.b-v small { color: var(--ink-2); }
+.b-track { grid-column: 1 / -1; height: 10px; border-radius: 9px; background: var(--foam); overflow: hidden; }
+.b-track i { display: block; height: 100%; background: var(--isl); border-radius: 9px; }
+.weak { display: flex; flex-direction: column; gap: 8px; }
+.wk { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 10px 12px; border-radius: 12px; background: var(--foam); border-left: 4px solid var(--isl); }
+.wk div { display: flex; flex-direction: column; min-width: 0; }
+.wk span { font-size: 12.5px; color: var(--ink-2); }
+.set-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 4px 0; border-top: 1px solid var(--line); padding-top: 10px; }
+.set-row:first-of-type { border-top: 0; }
+.shop { display: flex; flex-direction: column; gap: 10px; }
+.item { display: flex; align-items: center; gap: 12px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; }
+.it-ic { width: 48px; height: 48px; border-radius: 14px; background: var(--gold-soft); color: var(--gold); display: grid; place-items: center; flex: none; }
+.it-ic .ic { width: 26px; height: 26px; }
+.it-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.it-txt span { font-size: 13px; color: var(--ink-2); }
+.it-txt .own { font-size: 12px; }
+.gold-t { color: var(--gold); display: inline-flex; align-items: center; gap: 3px; }
+.gold-t .ic { width: 17px; height: 17px; }
+
+/* 시트 */
+.scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 40; animation: fade .2s; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 41; max-width: 560px; margin: 0 auto; max-height: 88vh; overflow-y: auto; background: var(--paper); border-radius: 22px 22px 0 0; padding: 20px max(18px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 14px; animation: up .25s ease-out; }
+.sh-top { display: flex; align-items: center; gap: 10px; }
+.sh-top .mon { width: 84px; height: 84px; flex: none; }
+.concept { background: var(--foam); border-radius: 14px; padding: 14px; line-height: 1.85; border-left: 4px solid var(--isl, var(--coral)); }
+.fld { display: flex; flex-direction: column; gap: 6px; }
+.fld > span { font-size: 13px; font-weight: 700; color: var(--ink-2); }
+.fld input { font: inherit; font-size: 17px; padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--foam); color: var(--ink); }
+.classes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.cls { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 4px; border-radius: 14px; border: 2px solid var(--line); background: var(--foam); }
+.cls .ic { width: 30px; height: 30px; color: var(--ink-2); }
+.cls span { font-size: 11.5px; color: var(--ink-2); }
+.cls.on { border-color: var(--coral); background: var(--coral-soft); }
+.cls.on .ic { color: var(--coral); }
+
+/* 전투 */
+.battle { max-width: 560px; margin: 0 auto; padding: calc(10px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 10px; }
+.bt-top { display: flex; align-items: center; gap: 10px; }
+.bt-name { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+.bt-name b { font-family: var(--f-disp); font-weight: 400; font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bt-name span { font-size: 12.5px; color: var(--ink-2); }
+.hearts { display: flex; gap: 2px; }
+.hearts .ic { width: 24px; height: 24px; stroke: var(--line); }
+.hearts i.on .ic { fill: var(--hp); stroke: var(--hp); }
+.hp { position: relative; height: 18px; border-radius: 9px; background: var(--paper); border: 1.5px solid var(--line); overflow: hidden; }
+.hp i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, var(--hp), color-mix(in srgb, var(--hp) 70%, var(--gold-fill))); border-radius: 9px; transition: width .45s cubic-bezier(.3, 1.4, .5, 1); }
+.hp span { position: relative; display: block; text-align: center; font-size: 11.5px; font-weight: 700; line-height: 15px; font-variant-numeric: tabular-nums; }
+.arena { position: relative; height: 176px; border-radius: 20px; overflow: hidden; border: 1px solid var(--line); background: var(--paper); background: linear-gradient(180deg, color-mix(in srgb, var(--isl) 24%, var(--paper)) 0%, var(--paper) 88%); display: grid; place-items: center; }
+.arena::after { content: ""; position: absolute; left: 50%; bottom: 12px; width: 150px; height: 18px; transform: translateX(-50%); border-radius: 50%; background: color-mix(in srgb, var(--isl) 30%, transparent); z-index: 0; }
+.mon-wrap { position: relative; z-index: 1; width: 150px; height: 150px; animation: bob 2.6s ease-in-out infinite; }
+.mon-wrap .mon { width: 100%; height: 100%; }
+.mon .eyes { animation: blink 4.2s infinite; transform-box: fill-box; transform-origin: center; }
+.mon-wrap.hurt { animation: hurt .5s ease-out; }
+.mon-wrap.lunge { animation: lunge .45s ease-in-out; }
+.arena.shake { animation: shake .4s; }
+.combo, .buff { position: absolute; top: 10px; z-index: 2; font-family: var(--f-disp); font-size: 15px; padding: 3px 10px; border-radius: 10px; }
+.combo { left: 10px; background: var(--coral); color: var(--on-coral); animation: pop .3s; }
+.buff { right: 10px; background: var(--gold-soft); color: var(--gold); }
+#fx { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+.fx { position: absolute; left: 50%; top: 50%; }
+.fx.slash { width: 200px; height: 7px; border-radius: 7px; background: linear-gradient(90deg, transparent, #FFF6D8, var(--coral), transparent); transform: translate(-50%, -50%) rotate(-32deg) scaleX(0); animation: slash .38s ease-out forwards; }
+.fx.burst { width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%; background: radial-gradient(circle, #FFF3C4 0%, #FFB23F 45%, rgba(255, 90, 40, .0) 72%); animation: burst .5s ease-out forwards; }
+.fx.arrow { width: 90px; height: 4px; margin-top: -2px; background: linear-gradient(90deg, transparent, var(--ink-2) 30%, var(--ink)); animation: arrow .32s ease-in forwards; }
+.dmg { position: absolute; left: 58%; top: 26%; font-family: var(--f-disp); font-size: 30px; color: var(--coral); -webkit-text-stroke: 1px var(--paper); animation: float .9s ease-out forwards; }
+.dmg.crit { font-size: 38px; color: var(--gold-fill); }
+.qcard { background: var(--paper); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.q-meta { display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; color: var(--ink-2); font-weight: 500; }
+.q-p { font-size: 16.5px; line-height: 1.7; overflow-wrap: anywhere; }
+.fig-wrap { overflow-x: auto; }
+.fig-wrap .fig, .fig-wrap .tbl { margin: 4px auto; }
+.hintbox { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; background: var(--gold-soft); color: var(--ink); font-size: 14.5px; }
+.hintbox .ic { color: var(--gold); margin-top: 3px; }
+.choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 8px; }
+.ch { display: flex; align-items: center; gap: 10px; min-height: 54px; padding: 8px 14px; text-align: left; background: var(--paper); border: 2px solid var(--line); border-radius: 14px; font-size: 15.5px; line-height: 1.5; }
+.ch:not(div):hover { border-color: var(--coral); }
+.ch:not(div):active { transform: scale(.98); }
+.ci { font-size: 18px; color: var(--ink-2); flex: none; }
+.co { min-width: 0; overflow-wrap: anywhere; }
+.ch.right { border-color: var(--good); background: var(--good-soft); }
+.ch.wrong { border-color: var(--bad); background: var(--bad-soft); }
+.choices.done .ch:not(.right):not(.wrong) { opacity: .55; }
+.ansline { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; font-size: 18px; }
+.ansline .pre, .ansline .unit { font-size: 18px; }
+.inbox { min-width: 110px; min-height: 58px; padding: 4px 16px; display: inline-flex; align-items: center; justify-content: center; border-radius: 14px; border: 2.5px solid var(--coral); background: var(--paper); font-family: var(--f-math); font-size: 26px; font-variant-numeric: tabular-nums; }
+.inbox.empty { border-style: dashed; border-color: var(--route); }
+.inbox .ph { color: var(--ink-2); animation: blinkc 1.1s steps(2) infinite; }
+.inbox.nudge { animation: shake .35s; }
+.pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+.pad button { min-height: 52px; border-radius: 13px; border: 1.5px solid var(--line); background: var(--paper); font-size: 21px; font-weight: 500; font-family: var(--f-math); display: grid; place-items: center; }
+.pad button:active { background: var(--foam); transform: scale(.97); }
+.pad button .fr { font-size: 13px; }
+.pad .ok { grid-column: span 2; background: var(--coral); color: var(--on-coral); border-color: transparent; font-family: var(--f-disp); font-size: 19px; }
+.tools { display: flex; gap: 8px; justify-content: center; }
+.tool { display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--paper); font-size: 13.5px; }
+.tool b { font-variant-numeric: tabular-nums; }
+.fb { border-radius: var(--r); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; border: 2px solid; animation: up .25s ease-out; }
+.fb.good { background: var(--good-soft); border-color: var(--good); }
+.fb.bad { background: var(--bad-soft); border-color: var(--bad); }
+.fb-h { font-size: 15px; }
+.fb-h b { font-family: var(--f-disp); font-weight: 400; font-size: 19px; margin-right: 4px; }
+.fb.good .fb-h b { color: var(--good); }
+.fb.bad .fb-h b { color: var(--bad); }
+.fb-a { font-size: 15.5px; line-height: 1.9; }
+.fb-note { font-size: 13.5px; color: var(--ink-2); }
+.fb .steps { background: var(--paper); border-radius: 12px; padding: 10px 12px 10px 30px; font-size: 14.5px; }
+.end { background: var(--paper); border: 1px solid var(--line); border-radius: 20px; padding: 22px 18px; display: flex; flex-direction: column; gap: 12px; text-align: center; align-items: stretch; animation: up .3s ease-out; }
+.end h2 { font-size: 30px; }
+.end.win h2 { color: var(--coral); }
+.end p { color: var(--ink-2); }
+.big-stars { display: flex; justify-content: center; gap: 6px; }
+.big-stars .ic { width: 48px; height: 48px; stroke: var(--line); stroke-width: 1.4; }
+.big-stars i { animation: pop .45s backwards; }
+.big-stars i.on .ic { fill: var(--gold-fill); stroke: var(--gold); }
+.gain { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; font-weight: 700; }
+.gain span { display: inline-flex; align-items: center; gap: 4px; }
+.toast-wrap { position: fixed; left: 0; right: 0; top: calc(env(safe-area-inset-top, 0px) + 72px); z-index: 50; display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; padding: 0 16px; }
+.toast { background: var(--ink); color: var(--paper); padding: 9px 16px; border-radius: 12px; font-size: 14px; max-width: 420px; text-align: center; animation: up .25s ease-out; transition: opacity .4s, transform .4s; }
+.toast.gold { background: var(--gold-fill); color: #2A1E00; }
+.toast.out { opacity: 0; transform: translateY(-8px); }
+
+/* 그림 */
+.fig { display: block; max-width: 100%; height: auto; }
+.fig .ln { stroke: var(--ink); stroke-width: 1.7; fill: none; stroke-linecap: round; }
+.fig .arc { stroke: var(--ink-2); stroke-width: 1.3; fill: none; }
+.fig .arc.hl { stroke: var(--coral); stroke-width: 2.2; }
+.fig .lb { fill: var(--ink); font: 600 12.5px var(--f-body); }
+.fig .lb.hl { fill: var(--coral); font-weight: 700; }
+.fig .tk { fill: var(--ink-2); font: 500 11px var(--f-body); }
+.fig .gd { stroke: var(--line); stroke-width: 1; }
+.fig .ax { stroke: var(--ink-2); stroke-width: 1.5; }
+.fig .pt { fill: var(--coral); }
+.fig .pg { fill: var(--coral-soft); stroke: var(--coral); stroke-width: 1.5; fill-opacity: .8; }
+.fig .dot { fill: var(--ink); }
+.fig .sec { fill: var(--coral-soft); stroke: var(--ink); stroke-width: 1.7; }
+.fig .tri { fill: var(--foam); stroke: var(--ink); stroke-width: 1.7; }
+.fig .hb { fill: var(--coral-soft); stroke: var(--coral); stroke-width: 1.4; }
+.fig .axis { stroke: var(--coral); stroke-width: 1.6; stroke-dasharray: 6 4; }
+.tbl { border-collapse: collapse; font-size: 14px; min-width: 220px; font-variant-numeric: tabular-nums; }
+.tbl th, .tbl td { border: 1px solid var(--line); padding: 6px 12px; text-align: center; }
+.tbl th { background: var(--foam); font-weight: 700; font-size: 13px; }
+.tbl tr.sum td { font-weight: 700; }
+.tbl.stem td:last-child { text-align: left; letter-spacing: .04em; min-width: 140px; }
+.cap { font-size: 12.5px; color: var(--ink-2); text-align: right; margin-top: 2px; }
+
+@keyframes bob { 50% { transform: translateY(-7px); } }
+@keyframes blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+@keyframes hurt { 0% { filter: brightness(2.4) saturate(.2); } 25% { transform: translateX(-10px) rotate(-5deg); } 55% { transform: translateX(8px) rotate(3deg); } 100% { transform: none; filter: none; } }
+@keyframes lunge { 45% { transform: scale(1.2) translateY(12px); } }
+@keyframes shake { 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
+@keyframes slash { 60% { transform: translate(-50%, -50%) rotate(-32deg) scaleX(1); opacity: 1; } 100% { transform: translate(-50%, -50%) rotate(-32deg) scaleX(1.1); opacity: 0; } }
+@keyframes burst { 0% { transform: scale(.3); opacity: 1; } 100% { transform: scale(4.2); opacity: 0; } }
+@keyframes arrow { 0% { transform: translateX(-260px); opacity: 1; } 85% { transform: translateX(-70px); opacity: 1; } 100% { transform: translateX(-60px); opacity: 0; } }
+@keyframes float { 0% { transform: translateY(8px) scale(.6); opacity: 0; } 20% { transform: translateY(0) scale(1.1); opacity: 1; } 100% { transform: translateY(-40px) scale(1); opacity: 0; } }
+@keyframes pop { 0% { transform: scale(.3); opacity: 0; } 70% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes up { from { transform: translateY(14px); opacity: 0; } }
+@keyframes fade { from { opacity: 0; } }
+@keyframes blinkc { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  .mon-wrap { animation: none; }
+}
+</style>
+<div id="app"></div>
+<div id="toasts" class="toast-wrap" aria-live="polite"></div>
+<script>
+'use strict';
+// ==GEN-START==
+/* ───────── 공통 도구 ───────── */
+const MI = '−';
+function ri(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function sample(a, k) { return shuffle(a).slice(0, k); }
+function nz(a, b) { let x; do { x = ri(a, b); } while (x === 0); return x; }
+function sgn() { return Math.random() < 0.5 ? -1 : 1; }
+function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { [a, b] = [b, a % b]; } return a; }
+function lcm(a, b) { return a / gcd(a, b) * b; }
+function isPrime(n) { if (n < 2) return false; for (let i = 2; i * i <= n; i++) if (n % i === 0) return false; return true; }
+function pf(n) { const f = {}; let m = n; for (let p = 2; p * p <= m; p++) { while (m % p === 0) { f[p] = (f[p] || 0) + 1; m /= p; } } if (m > 1) f[m] = (f[m] || 0) + 1; return f; }
+function fval(f) { let v = 1; for (const p in f) v *= Math.pow(+p, f[p]); return v; }
+function divCount(n) { let c = 0; for (let i = 1; i <= n; i++) if (n % i === 0) c++; return c; }
+
+/* 유리수 */
+function Q(n, d = 1) { if (d < 0) { n = -n; d = -d; } const g = gcd(n, d) || 1; return { n: n / g, d: d / g }; }
+const qi = n => Q(n, 1);
+const qa = (a, b) => Q(a.n * b.d + b.n * a.d, a.d * b.d);
+const qs = (a, b) => Q(a.n * b.d - b.n * a.d, a.d * b.d);
+const qm = (a, b) => Q(a.n * b.n, a.d * b.d);
+const qd = (a, b) => Q(a.n * b.d, a.d * b.n);
+const qeq = (a, b) => a.n * b.d === b.n * a.d;
+const qv = q => q.n / q.d;
+
+/* 수식 HTML */
+const fr = (a, b) => `<span class="fr"><span>${a}</span><span>${b}</span></span>`;
+const v = s => `<i>${s}</i>`;
+const X = v('x'), Y = v('y'), A_ = v('a'), B_ = v('b'), C_ = v('c');
+const M = s => `<span class="mx">${s}</span>`;
+const sup = n => `<sup>${n}</sup>`;
+const N = n => n < 0 ? MI + (-n) : '' + n;
+const qh = q => { const s = q.n < 0 ? MI : ''; const a = Math.abs(q.n); return q.d === 1 ? s + a : s + fr(a, q.d); };
+const qp = q => q.n < 0 ? '(' + qh(q) + ')' : qh(q);
+const qsg = q => '(' + (q.n < 0 ? '' : '+') + qh(q) + ')';
+const ip = n => n < 0 ? '(' + N(n) + ')' : '' + n;          // 정수: 음수면 괄호
+const isg = n => '(' + (n < 0 ? MI + (-n) : '+' + n) + ')';  // 정수: 부호 괄호
+const dstr = (n, k = 1) => { const s = (Math.abs(n) / Math.pow(10, k)).toString(); return (n < 0 ? MI : '') + s; };
+const dp = (n, k = 1) => n < 0 ? '(' + dstr(n, k) + ')' : dstr(n, k);
+const deg = s => s + '°';
+const ov = s => `<span class="ov">${s}</span>`;
+const box = s => `<span class="data">${s}</span>`;
+const J = (n, pair) => { const [c, vw] = pair.split('/'); return n + ([2, 4, 5, 9].includes(Math.abs(n) % 10) ? vw : c); };
+const jp = (n, pair) => { const [c, vw] = pair.split('/'); return [2, 4, 5, 9].includes(Math.abs(n) % 10) ? vw : c; };
+const pw = (b, e) => e > 1 ? b + sup(e) : '' + b;
+const frS = (n, den) => n < 0 ? MI + fr(-n, den) : fr(n, den);
+const cx1 = (c, x) => c === 1 ? x : c === -1 ? MI + x : N(c) + ' × ' + x;
+const calc = e => `다음을 계산하면?<div class="data">${M(e)}</div>`;
+const simp = e => `다음 식을 간단히 하면?<div class="data">${M(e)}</div>`;
+
+/* 다항식 표기: terms = [[계수(정수|Q), 문자html], ...] */
+function term(c, x, first) {
+  c = typeof c === 'number' ? qi(c) : c;
+  if (c.n === 0) return '';
+  const neg = c.n < 0, a = Q(Math.abs(c.n), c.d);
+  let body;
+  if (x) body = (a.n === 1 && a.d === 1 ? '' : qh(a)) + x;
+  else body = qh(a);
+  if (first) return (neg ? MI : '') + body;
+  return (neg ? ' ' + MI + ' ' : ' + ') + body;
+}
+function poly(terms) { let s = '', first = true; for (const [c, x] of terms) { const t = term(c, x, first); if (t) { s += t; first = false; } } return s || '0'; }
+const lin = (a, b, x = X) => poly([[a, x], [b, '']]);
+
+/* 문제 빌더 */
+function NQ(o) { return Object.assign({ kind: 'num', pre: '', unit: '', fig: '', steps: [] }, o); }
+function CQ(o) {
+  let opts;
+  if (o.order) opts = o.order.slice();
+  else {
+    const seen = new Set([o.ok]); const wr = [];
+    for (const w of shuffle(o.no)) { if (!seen.has(w)) { seen.add(w); wr.push(w); } if (wr.length === 3) break; }
+    opts = shuffle([o.ok, ...wr]);
+  }
+  return { kind: 'choice', p: o.p, opts, ci: opts.indexOf(o.ok), hint: o.hint, steps: o.steps || [], fig: o.fig || '' };
+}
+
+/* ───────── 그림(SVG) ───────── */
+const SV = (w, h, body) => `<svg class="fig" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img">${body}</svg>`;
+const P2 = (cx, cy, r, a) => [cx + r * Math.cos(a * Math.PI / 180), cy - r * Math.sin(a * Math.PI / 180)];
+const f1 = n => Math.round(n * 10) / 10;
+function arcPath(cx, cy, r, a1, a2) {
+  const [x1, y1] = P2(cx, cy, r, a1), [x2, y2] = P2(cx, cy, r, a2);
+  const large = ((a2 - a1 + 360) % 360) > 180 ? 1 : 0;
+  return `M${f1(x1)} ${f1(y1)} A${r} ${r} 0 ${large} 0 ${f1(x2)} ${f1(y2)}`;
+}
+function arcLabel(cx, cy, r, a1, a2, label, hl) {
+  const mid = a1 + (((a2 - a1) + 360) % 360) / 2;
+  const [tx, ty] = P2(cx, cy, r + 17, mid);
+  return `<path class="${hl ? 'arc hl' : 'arc'}" d="${arcPath(cx, cy, r, a1, a2)}"/><text class="${hl ? 'lb hl' : 'lb'}" x="${f1(tx)}" y="${f1(ty)}" text-anchor="middle" dominant-baseline="middle">${label}</text>`;
+}
+function lineThrough(cx, cy, R, a) { const [x1, y1] = P2(cx, cy, R, a), [x2, y2] = P2(cx, cy, R, a + 180); return `<line class="ln" x1="${f1(x1)}" y1="${f1(y1)}" x2="${f1(x2)}" y2="${f1(y2)}"/>`; }
+function ray(cx, cy, R, a) { const [x2, y2] = P2(cx, cy, R, a); return `<line class="ln" x1="${cx}" y1="${cy}" x2="${f1(x2)}" y2="${f1(y2)}"/>`; }
+
+function gridFig(points, poly_) {
+  const u = 17, n = 6, W = u * 2 * n + 30, H = W, o = W / 2;
+  const X_ = x => o + x * u, Y_ = y => o - y * u;
+  let s = '';
+  for (let i = -n; i <= n; i++) {
+    s += `<line class="gd" x1="${X_(i)}" y1="${Y_(-n)}" x2="${X_(i)}" y2="${Y_(n)}"/><line class="gd" x1="${X_(-n)}" y1="${Y_(i)}" x2="${X_(n)}" y2="${Y_(i)}"/>`;
+  }
+  s += `<line class="ax" x1="${X_(-n) - 6}" y1="${o}" x2="${X_(n) + 8}" y2="${o}"/><line class="ax" x1="${o}" y1="${Y_(-n) + 6}" x2="${o}" y2="${Y_(n) - 8}"/>`;
+  s += `<text class="tk" x="${X_(n) + 10}" y="${o - 6}">x</text><text class="tk" x="${o + 6}" y="${Y_(n) - 6}">y</text><text class="tk" x="${o - 11}" y="${o + 13}">O</text>`;
+  for (let i = -n; i <= n; i += 2) { if (i === 0) continue; s += `<text class="tk" x="${X_(i)}" y="${o + 13}" text-anchor="middle">${N(i)}</text><text class="tk" x="${o - 5}" y="${Y_(i) + 4}" text-anchor="end">${N(i)}</text>`; }
+  if (poly_) s += `<polygon class="pg" points="${poly_.map(p => X_(p[0]) + ',' + Y_(p[1])).join(' ')}"/>`;
+  for (const p of points) {
+    s += `<circle class="pt" cx="${X_(p.x)}" cy="${Y_(p.y)}" r="4"/><text class="lb hl" x="${X_(p.x) + (p.dx || 7)}" y="${Y_(p.y) - 7}">${p.name}</text>`;
+  }
+  return SV(W, H, s);
+}
+
+/* ───────── 1. 소인수분해 ───────── */
+const PRIMES = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97];
+const TRICKY = [21, 27, 33, 39, 49, 51, 57, 63, 69, 77, 81, 87, 91, 93, 9, 15, 25, 35, 45, 55, 65, 85, 95];
+function whyP(n) {
+  if (n === 1) return '1 → 약수가 1 하나뿐이라 소수도 합성수도 아니야.';
+  if (isPrime(n)) return `${n} → 약수가 1과 ${n}뿐이니까 <b>소수</b>`;
+  let p = 2; while (n % p) p++;
+  return `${n} = ${p} × ${n / p} → 약수가 3개 이상이니까 <b>합성수</b>`;
+}
+const pfh = f => Object.keys(f).map(Number).sort((a, b) => a - b).filter(p => f[p] > 0).map(p => f[p] > 1 ? p + sup(f[p]) : '' + p).join(' × ');
+function ladder(n) {
+  const out = []; let m = n, p = 2;
+  while (m > 1) { if (m % p === 0) { out.push(`${m} ÷ ${p} = ${m / p}`); m /= p; } else p++; }
+  return out.join(', ');
+}
+function randFactored(primes, maxE, lo, hi) {
+  for (let t = 0; t < 200; t++) {
+    const f = {}; for (const p of primes) f[p] = ri(1, maxE);
+    const n = fval(f); if (n >= lo && n <= hi) return { f, n };
+  }
+  return { f: { 2: 2, 3: 1, 5: 1 }, n: 60 };
+}
+const ST_PRIME = [
+  { t: '2는 짝수인 소수이다.', ok: 1, w: '2의 약수는 1, 2뿐이야. 짝수 중 소수는 2 하나뿐이야.' },
+  { t: '1은 소수도 합성수도 아니다.', ok: 1, w: '1은 약수가 1개라서 어느 쪽에도 속하지 않아.' },
+  { t: '소수의 약수는 2개이다.', ok: 1, w: '소수의 약수는 1과 자기 자신, 딱 2개야.' },
+  { t: '합성수는 약수가 3개 이상이다.', ok: 1, w: '1과 자기 자신 말고도 약수가 있으니까 3개 이상이야.' },
+  { t: '가장 작은 합성수는 4이다.', ok: 1, w: '2, 3은 소수이고 4 = 2 × 2가 첫 합성수야.' },
+  { t: '모든 소수는 홀수이다.', ok: 0, w: '2는 짝수인데 소수야.' },
+  { t: '1은 소수이다.', ok: 0, w: '1은 약수가 1개뿐이라 소수가 아니야.' },
+  { t: '합성수의 약수는 2개이다.', ok: 0, w: '약수가 2개인 건 소수야. 합성수는 3개 이상이야.' },
+  { t: '가장 작은 합성수는 6이다.', ok: 0, w: '4 = 2 × 2가 가장 작은 합성수야.' },
+  { t: '두 소수의 곱은 소수이다.', ok: 0, w: '예를 들어 2 × 3 = 6은 합성수야.' },
+  { t: '자연수는 소수와 합성수로만 이루어져 있다.', ok: 0, w: '1은 소수도 합성수도 아니니까 빠져 있어.' },
+];
+
+const G_PRIME = {
+  p1: [
+    () => { const p = pick(PRIMES.filter(x => x > 10)); const cs = sample(TRICKY, 3);
+      return CQ({ p: '다음 중 <b>소수</b>인 것은?', ok: '' + p, no: cs.map(String), hint: '2, 3, 5, 7로 나누어 떨어지는지 하나씩 확인해 봐.', steps: [p, ...cs].map(whyP) }); },
+    () => { const c = pick(TRICKY); const ps = sample(PRIMES.filter(x => x > 2), 3); if (Math.random() < 0.5) ps[0] = 1;
+      return CQ({ p: '다음 중 <b>합성수</b>인 것은?', ok: '' + c, no: ps.map(String), hint: '1과 자기 자신 말고 다른 약수가 있으면 합성수야. 1은 합성수가 아니야!', steps: [c, ...ps].map(whyP) }); },
+    () => { const a = ri(1, 40), b = a + ri(9, 15); const ps = []; for (let i = a; i <= b; i++) if (isPrime(i)) ps.push(i);
+      return NQ({ p: `${a} 이상 ${b} 이하의 자연수 중 소수는 모두 몇 개일까?`, ans: qi(ps.length), unit: '개', hint: '범위 안의 수를 하나씩 보면서 2, 3, 5, 7의 배수를 지워 봐.', steps: [`소수: ${ps.join(', ') || '없음'}`, `모두 ${ps.length}개`] }); },
+    () => { const wantTrue = Math.random() < 0.5; const ok = pick(ST_PRIME.filter(s => !!s.ok === wantTrue)); const no = sample(ST_PRIME.filter(s => !!s.ok !== wantTrue), 3);
+      return CQ({ p: `다음 중 옳${wantTrue ? '은' : '지 <b>않은</b>'} 것은?`, ok: ok.t, no: no.map(s => s.t), hint: '1, 2, 4처럼 경계에 있는 수를 떠올려 봐.', steps: [ok.t + ' → ' + ok.w] }); },
+  ],
+  p2: [
+    () => { const b = pick([2, 3, 5, 7]), n = ri(3, 6);
+      return NQ({ p: `${M(Array(n).fill(b).join(' × ') + ' = ' + b + sup('□'))} 일 때, □에 알맞은 수는?`, ans: qi(n), hint: '같은 수를 몇 번 곱했는지 세면 그게 지수야.', steps: [`${J(b, '을/를')} ${n}번 곱했으니 ${M(b + sup(n))}`] }); },
+    () => { const [p, q] = sample([2, 3, 5, 7], 2).sort((x, y) => x - y); const a = ri(2, 4), b = ri(1, 3);
+      const list = shuffle([...Array(a).fill(p), ...Array(b).fill(q)]);
+      return NQ({ p: `${M(list.join(' × ') + ' = ' + p + sup(A_) + ' × ' + q + sup(B_))} 일 때, ${M(A_ + ' + ' + B_)}의 값은?`, ans: qi(a + b), hint: `${J(p, '이/가')} 몇 번, ${J(q, '이/가')} 몇 번 곱해졌는지 따로 세어 봐.`, steps: [`${J(p, '은/는')} ${a}번 → ${M(A_ + ' = ' + a)}`, `${J(q, '은/는')} ${b}번 → ${M(B_ + ' = ' + b)}`, `${M(A_ + ' + ' + B_ + ' = ' + (a + b))}`] }); },
+    () => { let p, q, a, b, val; do { [p, q] = sample([2, 3, 5], 2).sort((x, y) => x - y); a = ri(1, 4); b = ri(1, 3); val = Math.pow(p, a) * Math.pow(q, b); } while (val > 400 || a + b < 3);
+      return NQ({ p: `${M(pw(p, a) + ' × ' + pw(q, b))}의 값은?`, ans: qi(val), hint: '거듭제곱을 먼저 계산한 다음 곱해.', steps: [`${M(pw(p, a) + ' = ' + Math.pow(p, a))}, ${M(pw(q, b) + ' = ' + Math.pow(q, b))}`, `${Math.pow(p, a)} × ${Math.pow(q, b)} = ${val}`] }); },
+    () => { const opts = [[2, 4, 9], [3, 2, 6], [5, 2, 4], [7, 2, 3]]; const [p, lo, hi] = pick(opts); const a = ri(lo, hi); const n = Math.pow(p, a);
+      return NQ({ p: `${M(p + sup(A_) + ' = ' + n)} 일 때, 자연수 ${M(A_)}의 값은?`, ans: qi(a), hint: `${p}를 계속 곱해 보면서 ${n}이 될 때까지 세어 봐.`, steps: [`${n} = ${Array(a).fill(p).join(' × ')} = ${p}${sup(a)}`, `${M(A_ + ' = ' + a)}`] }); },
+    () => { const b = pick([2, 3, 5]), n = ri(3, 5);
+      return NQ({ p: `${M(Array(n).fill(fr(1, b)).join(' × ') + ' = (' + fr(1, b) + ')' + sup('□'))} 일 때, □에 알맞은 수는?`, ans: qi(n), hint: '분수도 같은 수를 여러 번 곱하면 거듭제곱으로 쓸 수 있어.', steps: [`${fr(1, b)}을 ${n}번 곱했으니 지수는 ${n}`] }); },
+  ],
+  p3: [
+    () => { const { f, n } = randFactored(sample([2, 3, 5, 7], ri(2, 3)), 3, 24, 700);
+      const ps = Object.keys(f).map(Number).sort((a, b) => a - b);
+      const ok = pfh(f); const no = [];
+      const f1_ = Object.assign({}, f); f1_[ps[0]]++; no.push(pfh(f1_));
+      const hi = ps.find(p => f[p] >= 2);
+      if (hi) { const f2 = Object.assign({}, f); f2[hi]--; no.push(pfh(f2)); const rest = Object.assign({}, f); delete rest[hi]; no.push([Math.pow(hi, f[hi]), pfh(rest)].filter(Boolean).join(' × ')); }
+      const f3 = Object.assign({}, f); f3[ps[ps.length - 1]]++; no.push(pfh(f3));
+      const f4 = Object.assign({}, f); const big = ps[ps.length - 1]; const nxt = PRIMES[PRIMES.indexOf(big) + 1]; f4[nxt] = f4[big]; delete f4[big]; no.push(pfh(f4));
+      return CQ({ p: `${J(n, '을/를')} 소인수분해한 것은?`, ok, no, hint: '가장 작은 소수 2부터 나누어 떨어질 때까지 계속 나누어 봐.', steps: [ladder(n), `${n} = ${ok}`, '곱이 같아도 소수가 아닌 수가 섞여 있으면 소인수분해가 아니야.'] }); },
+    () => { const { f, n } = randFactored(sample([2, 3, 5, 7, 11], ri(2, 3)), 3, 30, 800); const ps = Object.keys(f).map(Number); const s = ps.reduce((a, b) => a + b, 0);
+      return NQ({ p: `${n}의 <b>소인수</b>를 모두 더하면?`, ans: qi(s), hint: '소인수는 소인수분해에 나오는 소수들이야. 지수는 상관없어!', steps: [`${n} = ${pfh(f)}`, `소인수: ${ps.sort((a, b) => a - b).join(', ')}`, `합: ${s}`] }); },
+    () => { let f, n, k;
+      do { ({ f, n } = randFactored(sample([2, 3, 5, 7], ri(2, 3)), 3, 12, 600)); k = 1; for (const p in f) if (f[p] % 2) k *= +p; } while (k === 1);
+      const odd = Object.keys(f).filter(p => f[p] % 2).map(Number);
+      return NQ({ p: `${n}에 가능한 한 작은 자연수 ${M(A_)}를 곱해서 어떤 자연수의 제곱이 되게 하려고 해. ${M(A_)}의 값은?`, ans: qi(k), hint: '먼저 소인수분해해 봐. 제곱수는 모든 지수가 짝수야.', steps: [`${n} = ${pfh(f)}`, `지수가 홀수인 소인수: ${odd.join(', ')}`, `이것들을 한 번씩 더 곱하면 모든 지수가 짝수 → ${M(A_ + ' = ' + k)}`] }); },
+    () => { const { f, n } = randFactored([2, 3, 5], 3, 60, 1000);
+      return NQ({ p: `${J(n, '을/를')} 소인수분해하면 ${M('2' + sup(A_) + ' × 3' + sup(B_) + ' × 5' + sup(C_))}일 때, ${M(A_ + ' + ' + B_ + ' + ' + C_)}의 값은?`, ans: qi(f[2] + f[3] + f[5]), hint: '2, 3, 5로 차례대로 나누면서 몇 번 나누었는지 세어 봐.', steps: [ladder(n), `${n} = ${pfh(f)}`, `${f[2]} + ${f[3]} + ${f[5]} = ${f[2] + f[3] + f[5]}`] }); },
+  ],
+  p4: [
+    () => { const ps = sample([2, 3, 5, 7], Math.random() < 0.6 ? 2 : 3).sort((a, b) => a - b); const f = {}; ps.forEach(p => f[p] = ri(1, 4)); const c = ps.reduce((m, p) => m * (f[p] + 1), 1);
+      return NQ({ p: `${M(pfh(f))}의 약수는 모두 몇 개일까?`, ans: qi(c), unit: '개', hint: '(지수 + 1)끼리 곱하면 약수의 개수야.', steps: [ps.map(p => `(${f[p]} + 1)`).join(' × ') + ` = ${c}`] }); },
+    () => { const n = pick([12, 18, 20, 24, 28, 36, 40, 45, 48, 50, 54, 60, 72, 75, 80, 84, 90, 96, 100, 108, 120, 144, 150, 180, 200]); const f = pf(n); const c = divCount(n);
+      return NQ({ p: `${n}의 약수의 개수는?`, ans: qi(c), unit: '개', hint: '먼저 소인수분해하고, 각 지수에 1을 더해서 곱해 봐.', steps: [`${n} = ${pfh(f)}`, Object.keys(f).map(p => `(${f[p]} + 1)`).join(' × ') + ` = ${c}`] }); },
+    () => { const [p, q] = sample([2, 3, 5], 2).sort((a, b) => a - b); const a = ri(2, 4), b = ri(1, 3); const r = [2, 3, 5, 7].find(x => x !== p && x !== q);
+      const ok = pick([p + sup(a + 1), p + ' × ' + q + sup(b + 1), r + ' × ' + q, p + sup(a) + ' × ' + q + sup(b + 1)]);
+      const divs = []; for (let i = 0; i <= a; i++) for (let j = 0; j <= b; j++) { if (i + j === 0) continue; const ff = {}; ff[p] = i; ff[q] = j; divs.push(pfh(ff)); }
+      return CQ({ p: `다음 중 ${M(pw(p, a) + ' × ' + pw(q, b))}의 약수가 <b>아닌</b> 것은?`, ok, no: sample(divs, 3), hint: `약수는 ${p}의 지수가 ${a} 이하, ${q}의 지수가 ${b} 이하여야 하고 다른 소인수가 없어야 해.`, steps: [`${M(ok)} → 지수가 너무 크거나 없는 소인수가 들어 있어서 약수가 아니야.`] }); },
+    () => { const q = pick([3, 5]), b = ri(1, 3), a = ri(1, 5); const c = (a + 1) * (b + 1);
+      return NQ({ p: `${M('2' + sup(A_) + ' × ' + pw(q, b))}의 약수의 개수가 ${c}개일 때, 자연수 ${M(A_)}의 값은?`, ans: qi(a), hint: '약수의 개수 = (a + 1) × (지수 + 1)로 식을 세워 봐.', steps: [`${M('(' + A_ + ' + 1) × (' + b + ' + 1) = ' + c)}`, `${M(A_ + ' + 1 = ' + (a + 1))} → ${M(A_ + ' = ' + a)}`] }); },
+  ],
+  p5: [
+    () => { let g, m, n; do { g = ri(2, 15); m = ri(2, 9); n = ri(2, 9); } while (m === n || gcd(m, n) !== 1 || g * Math.max(m, n) > 150); const A = g * m, B = g * n;
+      return NQ({ p: `${J(A, '과/와')} ${B}의 <b>최대공약수</b>는?`, ans: qi(g), hint: '두 수를 소인수분해하고 공통인 소인수를 지수가 작은 쪽으로 곱해.', steps: [`${A} = ${pfh(pf(A))}`, `${B} = ${pfh(pf(B))}`, `최대공약수 = ${pfh(pf(g)) === '' + g ? g : pfh(pf(g)) + ' = ' + g}`] }); },
+    () => { let g, m, n; do { g = ri(2, 8); m = ri(2, 9); n = ri(2, 9); } while (m === n || gcd(m, n) !== 1 || g * m * n > 250); const A = g * m, B = g * n, L = g * m * n;
+      return NQ({ p: `${J(A, '과/와')} ${B}의 <b>최소공배수</b>는?`, ans: qi(L), hint: '모든 소인수를 지수가 큰 쪽으로 골라서 곱해.', steps: [`${A} = ${pfh(pf(A))}`, `${B} = ${pfh(pf(B))}`, `최소공배수 = ${pfh(pf(L)) === '' + L ? L : pfh(pf(L)) + ' = ' + L}`] }); },
+    () => { let f1, f2, g, l; do { f1 = {}; f2 = {}; for (const p of [2, 3, 5, 7]) { f1[p] = Math.random() < 0.7 ? ri(1, 3) : 0; f2[p] = Math.random() < 0.7 ? ri(1, 3) : 0; } g = {}; l = {}; for (const p of [2, 3, 5, 7]) { g[p] = Math.min(f1[p], f2[p]); l[p] = Math.max(f1[p], f2[p]); } } while (!pfh(g) || pfh(f1) === pfh(f2) || pfh(g) === pfh(f1) || pfh(g) === pfh(f2));
+      const wantG = Math.random() < 0.5; const ok = pfh(wantG ? g : l);
+      const prod = {}; for (const p of [2, 3, 5, 7]) prod[p] = f1[p] + f2[p];
+      const gw = Object.assign({}, g); const kk = Object.keys(gw).find(p => gw[p] > 0); gw[kk]++;
+      return CQ({ p: `두 수 ${M(pfh(f1))}, ${M(pfh(f2))}의 <b>${wantG ? '최대공약수' : '최소공배수'}</b>는?`, ok, no: [pfh(wantG ? l : g), pfh(prod), pfh(gw), pfh(f1)], hint: wantG ? '공통인 소인수만, 지수는 작은 쪽!' : '모든 소인수를, 지수는 큰 쪽!', steps: [`최대공약수: 공통 소인수의 지수가 작은 것 → ${pfh(g)}`, `최소공배수: 모든 소인수의 지수가 큰 것 → ${pfh(l)}`] }); },
+    () => { let g, m, n; do { g = ri(3, 15); m = ri(2, 6); n = ri(2, 6); } while (m === n || gcd(m, n) !== 1); const A = g * m, B = g * n;
+      const ctx = pick([
+        [`가로 ${A} cm, 세로 ${B} cm인 직사각형 종이를 남김없이 같은 크기의 정사각형으로 자르려고 해. 정사각형을 가장 크게 할 때 한 변의 길이는?`, 'cm'],
+        [`사탕 ${A}개와 젤리 ${B}개를 최대한 많은 친구에게 남김없이 똑같이 나누어 주려고 해. 몇 명에게 나누어 줄 수 있을까?`, '명'],
+      ]);
+      return NQ({ p: ctx[0], ans: qi(g), unit: ctx[1], hint: '"남김없이 똑같이, 가장 크게/많이"는 최대공약수 신호야!', steps: [`${J(A, '과/와')} ${B}의 최대공약수를 구하면 돼.`, `${A} = ${pfh(pf(A))}, ${B} = ${pfh(pf(B))}`, `최대공약수 = ${g}`] }); },
+    () => { let A, B; do { A = ri(4, 24); B = ri(4, 24); } while (A === B || gcd(A, B) === 1 || lcm(A, B) > 180 || A % B === 0 || B % A === 0); const L = lcm(A, B);
+      const ctx = pick([
+        [`A 버스는 ${A}분마다, B 버스는 ${B}분마다 출발해. 오전 9시에 두 버스가 동시에 출발했다면, 처음으로 다시 동시에 출발하는 것은 몇 분 후일까?`, '분 후'],
+        [`가로 ${A} cm, 세로 ${B} cm인 직사각형 타일을 같은 방향으로 빈틈없이 붙여서 가장 작은 정사각형을 만들려고 해. 정사각형의 한 변의 길이는?`, 'cm'],
+      ]);
+      return NQ({ p: ctx[0], ans: qi(L), unit: ctx[1], hint: '"처음으로 다시 동시에, 가장 작은 정사각형"은 최소공배수 신호야!', steps: [`${J(A, '과/와')} ${B}의 최소공배수를 구하면 돼.`, `${A} = ${pfh(pf(A))}, ${B} = ${pfh(pf(B))}`, `최소공배수 = ${L}`] }); },
+    () => { const G = pick([12, 18, 20, 24, 30, 36, 40, 48]); const c = divCount(G); const ds = []; for (let i = 1; i <= G; i++) if (G % i === 0) ds.push(i);
+      return NQ({ p: `두 자연수의 최대공약수가 ${G}일 때, 두 수의 공약수는 모두 몇 개일까?`, ans: qi(c), unit: '개', hint: '두 수의 공약수는 최대공약수의 약수와 같아.', steps: [`공약수 = ${G}의 약수: ${ds.join(', ')}`, `모두 ${c}개`] }); },
+  ],
+};
+
+/* ───────── 2. 정수와 유리수 ───────── */
+function randRat() {
+  const t = ri(0, 2);
+  if (t === 0) return { q: qi(nz(-9, 9)), h: null };
+  if (t === 1) { let a, b; do { a = ri(1, 9); b = ri(2, 6); } while (a % b === 0); const q = Q(sgn() * a, b); return { q, h: null }; }
+  const n = sgn() * ri(1, 49); return { q: Q(n, 10), h: dstr(n) };
+}
+const ratH = r => r.h || qh(r.q);
+
+const G_INT = {
+  i1: [
+    () => {
+      const gens = [
+        () => { const n = ri(1, 9); return { h: '+' + n, int: 1, nat: 1, neg: 0, pos: 1 }; },
+        () => { const n = ri(1, 12); return { h: '' + n, int: 1, nat: 1, neg: 0, pos: 1 }; },
+        () => { const n = ri(1, 9); return { h: MI + n, int: 1, nat: 0, neg: 1, pos: 0 }; },
+        () => ({ h: '0', int: 1, nat: 0, neg: 0, pos: 0 }),
+        () => { let a, b; do { b = ri(2, 7); a = ri(1, 9); } while (a % b === 0); return { h: (Math.random() < 0.5 ? '+' : '') + fr(a, b), int: 0, nat: 0, neg: 0, pos: 1 }; },
+        () => { let a, b; do { b = ri(2, 7); a = ri(1, 9); } while (a % b === 0); return { h: MI + fr(a, b), int: 0, nat: 0, neg: 1, pos: 0 }; },
+        () => { const n = ri(1, 39); if (n % 10 === 0) return { h: '+' + (n / 10), int: 1, nat: 1, neg: 0, pos: 1 }; return { h: '+' + (n / 10), int: 0, nat: 0, neg: 0, pos: 1 }; },
+        () => { const n = ri(1, 39); if (n % 10 === 0) return { h: MI + (n / 10), int: 1, nat: 0, neg: 1, pos: 0 }; return { h: MI + (n / 10), int: 0, nat: 0, neg: 1, pos: 0 }; },
+        () => { const b = ri(2, 4), k = ri(1, 3); return { h: fr(b * k, b), int: 1, nat: 1, neg: 0, pos: 1, note: `${fr(b * k, b)} = ${k}` }; },
+        () => { const b = ri(2, 4), k = ri(1, 3); return { h: MI + fr(b * k, b), int: 1, nat: 0, neg: 1, pos: 0, note: `${MI}${fr(b * k, b)} = ${MI}${k}` }; },
+      ];
+      const items = []; const seen = new Set();
+      const must = [gens[3], pick([gens[8], gens[9]]), pick([gens[4], gens[5]]), pick([gens[2], gens[7]])];
+      for (const g of must) { const it = g(); if (!seen.has(it.h)) { seen.add(it.h); items.push(it); } }
+      while (items.length < 6) { const it = pick(gens)(); if (!seen.has(it.h)) { seen.add(it.h); items.push(it); } }
+      const list = shuffle(items);
+      const ask = pick([['정수', 'int'], ['자연수', 'nat'], ['음수', 'neg'], ['정수가 아닌 유리수', 'nonint'], ['양수', 'pos']]);
+      const is = it => ask[1] === 'nonint' ? !it.int : !!it[ask[1]];
+      const hits = list.filter(is);
+      return NQ({ p: `다음 수 중 <b>${ask[0]}</b>는 모두 몇 개일까?<div class="data">${M(list.map(i => i.h).join(',&ensp;'))}</div>`, ans: qi(hits.length), unit: '개', hint: '분수 모양이어도 약분해서 정수가 되면 정수야. 0은 양수도 음수도 아닌 정수!', steps: [list.filter(i => i.note).map(i => M(i.note) + ' (정수)').join(', ') || '약분되는 분수는 없어.', `${ask[0]}: ${hits.length ? M(hits.map(i => i.h).join(', ')) : '없음'} → ${hits.length}개`] });
+    },
+  ],
+  i2: [
+    () => { const a = nz(-12, 12), b = nz(-12, 12); const op = pick(['+', MI, '×']); const A = Math.abs(a), B = Math.abs(b); const r = op === '+' ? A + B : op === MI ? A - B : A * B;
+      return NQ({ p: `${M(`|${N(a)}| ${op} |${N(b)}|`)}의 값은?`, ans: qi(r), hint: '절댓값은 0에서 떨어진 거리라서 항상 0 이상이야.', steps: [`|${N(a)}| = ${A}, |${N(b)}| = ${B}`, `${A} ${op} ${B} = ${N(r)}`] }); },
+    () => { const n = ri(2, 6); const strict = Math.random() < 0.5; const c = strict ? 2 * n - 1 : 2 * n + 1; const lo = strict ? -(n - 1) : -n;
+      return NQ({ p: `절댓값이 ${n} ${strict ? '보다 작은' : '이하인'} 정수는 모두 몇 개일까?`, ans: qi(c), unit: '개', hint: '수직선에서 0을 중심으로 양쪽을 생각해 봐. 0도 잊지 마!', steps: [`${N(lo)}, …, ${MI}1, 0, 1, …, ${-lo}`, `모두 ${c}개`] }); },
+    () => { const vals = []; const seen = new Set(); while (vals.length < 4) { const r = randRat(); const k = r.q.n + '/' + r.q.d; if (!seen.has(k)) { seen.add(k); vals.push(r); } }
+      const big = Math.random() < 0.5; const sorted = vals.slice().sort((x, y) => qv(x.q) - qv(y.q)); const ans = big ? sorted[3] : sorted[0];
+      return CQ({ p: `다음 중 가장 <b>${big ? '큰' : '작은'}</b> 수는?`, ok: M(ratH(ans)), no: vals.filter(x => x !== ans).map(x => M(ratH(x))), hint: '음수는 절댓값이 클수록 작아. 분수와 소수는 크기를 어림해 봐.', steps: [`작은 것부터: ${M(sorted.map(ratH).join(' &lt; '))}`] }); },
+    () => {
+      const mk = () => { if (Math.random() < 0.5) { const n = sgn() * ri(5, 45); return n % 10 === 0 ? { q: Q(n + 3, 10), h: dstr(n + 3) } : { q: Q(n, 10), h: dstr(n) }; } let a, b; do { b = ri(2, 4); a = ri(3, 17); } while (a % b === 0); const q = Q(sgn() * a, b); return { q, h: qh(q) }; };
+      let L, U; do { L = mk(); U = mk(); } while (qv(U.q) - qv(L.q) < 2);
+      const s1 = Math.random() < 0.5, s2 = Math.random() < 0.5;
+      const lo = Math.floor(qv(L.q)) + 1, hi = Math.floor(qv(U.q));
+      const ints = []; for (let i = lo; i <= hi; i++) ints.push(i);
+      return NQ({ p: `${M(L.h + (s1 ? ' &lt; ' : ' ≤ ') + X + (s2 ? ' &lt; ' : ' ≤ ') + U.h)}를 만족하는 정수 ${M(X)}는 모두 몇 개일까?`, ans: qi(ints.length), unit: '개', hint: '양 끝의 수가 정수와 정수 사이 어디쯤인지 수직선에 표시해 봐.', steps: [`${M(L.h + ' ≈ ' + dstr(Math.round(qv(L.q) * 10)) + ',&ensp;' + U.h + ' ≈ ' + dstr(Math.round(qv(U.q) * 10)))}`, `정수: ${ints.map(N).join(', ')}`, `모두 ${ints.length}개`] }); },
+    () => { const k = ri(2, 9);
+      return NQ({ p: `절댓값이 같고 부호가 반대인 두 수가 있어. 수직선 위에서 두 수를 나타내는 두 점 사이의 거리가 ${2 * k}일 때, 두 수 중 <b>작은</b> 수는?`, ans: qi(-k), hint: '두 점은 0에서 같은 거리만큼 떨어져 있어.', steps: [`0에서 각각 ${2 * k} ÷ 2 = ${k}만큼 떨어져 있어.`, `두 수는 ${MI}${k}, ${k} → 작은 수는 ${MI}${k}`] }); },
+  ],
+  i3: [
+    () => { const a = nz(-15, 15), b = nz(-15, 15); const plus = Math.random() < 0.5; const r = plus ? a + b : a - b;
+      return NQ({ p: calc(isg(a) + (plus ? ' + ' : ' ' + MI + ' ') + isg(b)), ans: qi(r), hint: '빼기는 빼는 수의 부호를 바꿔서 더하기로 바꿀 수 있어.', steps: plus ? [`${M(isg(a) + ' + ' + isg(b) + ' = ' + N(r))}`] : [`${M(isg(a) + ' ' + MI + ' ' + isg(b) + ' = ' + isg(a) + ' + ' + isg(-b))}`, `= ${N(r)}`] }); },
+    () => { const a = nz(-12, 12), b = nz(-12, 12), c = nz(-12, 12); const r = a - b + c;
+      return NQ({ p: calc(isg(a) + ' ' + MI + ' ' + isg(b) + ' + ' + isg(c)), ans: qi(r), hint: '뺄셈을 덧셈으로 바꾼 다음, 양수끼리 음수끼리 모아서 더해 봐.', steps: [`${M('= ' + isg(a) + ' + ' + isg(-b) + ' + ' + isg(c))}`, `= ${N(r)}`] }); },
+    () => { const mk = () => { let a, b; do { b = pick([2, 3, 4, 5, 6]); a = ri(1, 7); } while (gcd(a, b) !== 1); return Q(sgn() * a, b); }; const x = mk(), y = mk(); const plus = Math.random() < 0.5; const r = plus ? qa(x, y) : qs(x, y); const L = lcm(x.d, y.d);
+      const xs = Q(x.n * (L / x.d), L), ys = Q(y.n * (L / y.d), L);
+      const ex = q => '(' + (q.n < 0 ? MI : '+') + fr(Math.abs(q.n), L) + ')';
+      return NQ({ p: calc(qsg(x) + (plus ? ' + ' : ' ' + MI + ' ') + qsg(y)), ans: r, hint: '분모를 최소공배수로 통분한 다음 계산해. 답은 기약분수로!', steps: [`통분 (분모 ${L}): ${M(ex({ n: x.n * (L / x.d), d: L }) + (plus ? ' + ' : ' ' + MI + ' ') + ex({ n: y.n * (L / y.d), d: L }))}`, `= ${M(qh(r))}`] }); },
+    () => { const a = nz(-60, 60), b = nz(-60, 60); const plus = Math.random() < 0.5; const r = plus ? a + b : a - b;
+      return NQ({ p: calc('(' + (a < 0 ? '' : '+') + dstr(a) + ')' + (plus ? ' + ' : ' ' + MI + ' ') + '(' + (b < 0 ? '' : '+') + dstr(b) + ')'), ans: Q(r, 10), hint: '소수점을 맞춰서 계산해. 빼기는 부호를 바꿔 더하기로!', steps: [plus ? '' : `${M('(' + (a < 0 ? '' : '+') + dstr(a) + ') + (' + (-b < 0 ? '' : '+') + dstr(-b) + ')')}`, `= ${dstr(r)}`].filter(Boolean) }); },
+    () => { const a = nz(-9, 9), b = nz(-9, 9); const small = Math.random() < 0.5; const r = small ? a - b : a + b;
+      return NQ({ p: `${N(a)}보다 ${N(b)}만큼 ${small ? '작은' : '큰'} 수는?`, ans: qi(r), hint: '"~만큼 큰 수"는 더하기, "~만큼 작은 수"는 빼기야. 음수가 나와도 똑같이!', steps: [`${M(isg(a) + (small ? ' ' + MI + ' ' : ' + ') + isg(b) + ' = ' + N(r))}`] }); },
+  ],
+  i4: [
+    () => { const xs = [nz(-6, 6), nz(-6, 6), nz(-6, 6)]; const r = xs[0] * xs[1] * xs[2]; const negs = xs.filter(x => x < 0).length;
+      return NQ({ p: calc(xs.map(isg).join(' × ')), ans: qi(r), hint: '음수가 짝수 개면 +, 홀수 개면 − 부호야.', steps: [`음수가 ${negs}개 → 부호는 ${negs % 2 ? MI : '+'}`, `${xs.map(Math.abs).join(' × ')} = ${Math.abs(r)} → ${N(r)}`] }); },
+    () => {
+      const T = [
+        () => { const a = ri(2, 4), n = ri(2, 4); return { h: `(${MI}${a})${sup(n)}`, val: Math.pow(-a, n), why: `(${MI}${a})${sup(n)} = ${N(Math.pow(-a, n))}` }; },
+        () => { const a = ri(2, 4), n = ri(2, 4); return { h: `${MI}${a}${sup(n)}`, val: -Math.pow(a, n), why: `${MI}${a}${sup(n)} = ${MI}(${a}${sup(n)}) = ${N(-Math.pow(a, n))}` }; },
+        () => { const n = pick([99, 100, 101, 2026, 2027]); return { h: `(${MI}1)${sup(n)}`, val: n % 2 ? -1 : 1, why: `(${MI}1)${sup(n)} = ${n % 2 ? MI + '1 (지수가 홀수)' : '1 (지수가 짝수)'}` }; },
+      ];
+      let t1, t2; do { t1 = pick(T)(); t2 = pick(T)(); } while (t1.h === t2.h);
+      const plus = Math.random() < 0.5; const r = plus ? t1.val + t2.val : t1.val - t2.val;
+      return NQ({ p: calc(t1.h + (plus ? ' + ' : ' ' + MI + ' ') + t2.h), ans: qi(r), hint: `(${MI}2)${sup(2)}와 ${MI}2${sup(2)}는 달라! 괄호가 있으면 부호까지 거듭제곱해.`, steps: [M(t1.why), M(t2.why), `${M(ip(t1.val) + (plus ? ' + ' : ' ' + MI + ' ') + ip(t2.val) + ' = ' + N(r))}`] }); },
+    () => { const mk = () => { let a, b; do { a = ri(1, 9); b = ri(2, 9); } while (gcd(a, b) !== 1); return Q(sgn() * a, b); }; const x = mk(), y = mk(); const r = qm(x, y);
+      return NQ({ p: calc(qsg(x) + ' × ' + qsg(y)), ans: r, hint: '부호를 먼저 정하고, 분자끼리 분모끼리 곱한 다음 약분해.', steps: [`부호: ${(x.n < 0) !== (y.n < 0) ? MI : '+'}`, `${fr(Math.abs(x.n) + ' × ' + Math.abs(y.n), x.d + ' × ' + y.d)} = ${qh(Q(Math.abs(r.n), r.d))}`, `답: ${M(qh(r))}`] }); },
+    () => { const mk = () => { let a, b; do { a = ri(1, 9); b = ri(1, 9); } while (gcd(a, b) !== 1 || (a === 1 && b === 1)); return Q(sgn() * a, b); }; const x = mk(), y = mk(); const r = qd(x, y); const inv = Q(y.d, y.n);
+      return NQ({ p: calc(qsg(x) + ' ÷ ' + qsg(y)), ans: r, hint: '나눗셈은 나누는 수의 역수를 곱하는 것과 같아.', steps: [`${M(qsg(y))}의 역수는 ${M(qp(inv))}`, `${M(qsg(x) + ' × ' + qsg(inv) + ' = ' + qh(r))}`] }); },
+    () => { const mk = () => { let a, b; do { a = ri(1, 6); b = ri(1, 6); } while (gcd(a, b) !== 1 || (a === 1 && b === 1)); return Q(sgn() * a, b); };
+      const x = mk(); const dd = pick([{ h: '0.5', q: Q(1, 2) }, { h: '0.25', q: Q(1, 4) }, { h: '0.2', q: Q(1, 5) }, { h: '1.5', q: Q(3, 2) }, { h: MI + '0.5', q: Q(-1, 2) }, { h: MI + '2', q: Q(-2, 1) }, { h: '3', q: Q(3, 1) }]);
+      const r = qm(Q(x.d, x.n), Q(dd.q.d, dd.q.n));
+      return NQ({ p: `${M(qh(x))}의 역수와 ${M(dd.h)}의 역수의 곱은?`, ans: r, hint: '역수는 곱해서 1이 되는 수야. 소수는 분수로 바꾼 다음 뒤집어.', steps: [`${M(qh(x))}의 역수: ${M(qh(Q(x.d, x.n)))}`, `${M(dd.h)} = ${M(qh(dd.q))} → 역수: ${M(qh(Q(dd.q.d, dd.q.n)))}`, `곱: ${M(qh(r))}`] }); },
+  ],
+  i5: [
+    () => { const a = nz(-9, 9), b = nz(-6, 6), c = nz(-6, 6); const bc = b * c, r = a + bc;
+      return NQ({ p: calc(isg(a) + ' + ' + isg(b) + ' × ' + isg(c)), ans: qi(r), hint: '곱셈을 덧셈보다 먼저 해!', steps: [`곱셈 먼저: ${M(isg(b) + ' × ' + isg(c) + ' = ' + N(bc))}`, `${M(isg(a) + ' + ' + isg(bc) + ' = ' + N(r))}`] }); },
+    () => { const c = nz(-6, 6), k = nz(-6, 6), b = c * k, a = nz(-12, 12); const r = a - k;
+      return NQ({ p: calc(isg(a) + ' ' + MI + ' ' + isg(b) + ' ÷ ' + isg(c)), ans: qi(r), hint: '나눗셈을 뺄셈보다 먼저 해!', steps: [`나눗셈 먼저: ${M(isg(b) + ' ÷ ' + isg(c) + ' = ' + N(k))}`, `${M(isg(a) + ' ' + MI + ' ' + isg(k) + ' = ' + N(r))}`] }); },
+    () => { const p = ri(2, 4), q = ri(2, 5); const q2 = q * q; const divs = []; for (let i = 1; i <= q2; i++) if (q2 % i === 0 && i <= 9) divs.push(i); const r = pick(divs); const r1 = -p * p, r2 = q2 / r; const ans = r1 + r2;
+      return NQ({ p: calc(MI + p + sup(2) + ' + (' + MI + q + ')' + sup(2) + ' ÷ ' + r), ans: qi(ans), hint: `거듭제곱 → 곱셈·나눗셈 → 덧셈 순서야. ${MI}${p}${sup(2)}와 (${MI}${p})${sup(2)}는 달라!`, steps: [`${M(MI + p + sup(2) + ' = ' + N(r1))}, ${M('(' + MI + q + ')' + sup(2) + ' = ' + q2)}`, `${M(q2 + ' ÷ ' + r + ' = ' + r2)}`, `${M(N(r1) + ' + ' + r2 + ' = ' + N(ans))}`] }); },
+    () => { const a = nz(-8, 8), b = nz(-8, 8), c = nz(-5, 5), d = nz(-9, 9); const s = a + b; const r = s * c - d;
+      return NQ({ p: calc('{' + isg(a) + ' + ' + isg(b) + '} × ' + isg(c) + ' ' + MI + ' ' + isg(d)), ans: qi(r), hint: '괄호 안을 먼저 계산하고, 곱셈 → 뺄셈 순서로!', steps: [`괄호: ${M(isg(a) + ' + ' + isg(b) + ' = ' + N(s))}`, `곱셈: ${M(ip(s) + ' × ' + isg(c) + ' = ' + N(s * c))}`, `${M(ip(s * c) + ' ' + MI + ' ' + isg(d) + ' = ' + N(r))}`] }); },
+    () => { const a = pick([2, 3]); const k = a * a * ri(1, 4) * sgn(); const c = nz(-9, 9); const first = k / (a * a); const r = first - c;
+      return NQ({ p: calc('(' + MI + fr(1, a) + ')' + sup(2) + ' × ' + isg(k) + ' ' + MI + ' ' + isg(c)), ans: qi(r), hint: '거듭제곱 먼저! 음수를 짝수 번 곱하면 양수가 돼.', steps: [`${M('(' + MI + fr(1, a) + ')' + sup(2) + ' = ' + fr(1, a * a))}`, `${M(fr(1, a * a) + ' × ' + isg(k) + ' = ' + N(first))}`, `${M(ip(first) + ' ' + MI + ' ' + isg(c) + ' = ' + N(r))}`] }); },
+  ],
+};
+
+/* ───────── 3. 문자와 식 ───────── */
+const G_EXPR = {
+  e1: [
+    () => { const k = ri(2, 9);
+      const T = pick([
+        [`${B_} × ${A_} × (${MI}${k})`, `${MI}${k}${A_}${B_}`, [`${k}${A_}${B_}`, `${MI}${A_}${B_}`, `${A_}${B_} ${MI} ${k}`], '수를 문자 앞에, 문자는 알파벳 순서로 써.'],
+        [`${X} × ${Y} × ${X} × ${k}`, `${k}${X}${sup(2)}${Y}`, [`${2 * k}${X}${Y}`, `${k}${X}${Y}${sup(2)}`, `${k}${sup(2)}${X}${Y}`], '같은 문자의 곱은 거듭제곱으로 나타내.'],
+        [`${A_} ÷ ${B_} × ${k}`, fr(k + A_, B_), [fr(A_, k + B_), fr(k, A_ + B_), fr(A_ + B_, k)], '나눗셈은 분수로! ÷ 뒤의 문자만 분모로 가.'],
+        [`${X} ÷ ${Y} ÷ ${k}`, fr(X, k + Y), [fr(k + X, Y), fr(X + Y, k), fr(Y, k + X)], '÷가 두 번이면 뒤의 두 개가 모두 분모로 가.'],
+        [`(${A_} + ${B_}) ÷ ${k}`, fr(A_ + ' + ' + B_, k), [A_ + ' + ' + fr(B_, k), k + '(' + A_ + ' + ' + B_ + ')', fr(k, A_ + ' + ' + B_)], '괄호 전체가 분자로 올라가.'],
+        [`${A_} × (${MI}1) ÷ ${B_}`, MI + fr(A_, B_), [MI + A_ + B_, fr(A_, B_), MI + fr(B_, A_)], '1은 생략하고 부호 −만 남겨.'],
+        [`${A_} ÷ ${fr(1, k)}`, k + A_, [fr(A_, k), fr(k, A_), fr(1, k + A_)], `${fr(1, k)}로 나누는 것은 ${J(k, '을/를')} 곱하는 것과 같아.`],
+        [`${A_} × ${A_} × ${A_} ÷ ${B_}`, fr(A_ + sup(3), B_), [fr('3' + A_, B_), A_ + sup(3) + B_, fr(B_, A_ + sup(3))], '같은 문자를 3번 곱하면 세제곱이야.'],
+        [`${k} × ${X} ${MI} ${Y} ÷ 3`, `${k}${X} ${MI} ${fr(Y, 3)}`, [fr(`${k}${X} ${MI} ${Y}`, 3), `${k}${X} ${MI} 3${Y}`, `${k}(${X} ${MI} ${Y})`], '곱셈·나눗셈 기호만 생략하고 +, −는 그대로 둬.'],
+      ]);
+      return CQ({ p: `다음 식을 곱셈 기호와 나눗셈 기호를 생략하여 나타내면?<div class="data">${M(T[0])}</div>`, ok: M(T[1]), no: T[2].map(M), hint: T[3], steps: [`${M(T[0] + ' = ' + T[1])}`, T[3]] }); },
+  ],
+  e2: [
+    () => { const a = nz(-4, 4), p = nz(-4, 4), q = nz(-6, 6), r = ri(-9, 9); const t1 = p * a * a, t2 = q * a, val = t1 + t2 + r;
+      return NQ({ p: `${M(A_ + ' = ' + N(a))}일 때, ${M(poly([[p, A_ + sup(2)], [q, A_], [r, '']]))}의 값은?`, ans: qi(val), hint: '음수를 대입할 때는 꼭 괄호를 씌워!', steps: (() => { const s3 = r ? (r < 0 ? ' ' + MI + ' ' : ' + ') + Math.abs(r) : ''; return [`${M(N(p) + ' × ' + ip(a) + sup(2) + (q < 0 ? ' ' + MI + ' ' : ' + ') + Math.abs(q) + ' × ' + ip(a) + s3)}`, `= ${M(N(t1) + (t2 < 0 ? ' ' + MI + ' ' : ' + ') + Math.abs(t2) + s3)}`, `= ${N(val)}`]; })() }); },
+    () => { const x = nz(-5, 5), y = nz(-5, 5);
+      const F = pick([
+        [() => { const p = nz(-4, 4), q = nz(-4, 4); return [poly([[p, X], [q, Y]]), p * x + q * y, `${cx1(p, ip(x))} ${q < 0 ? MI : '+'} ${cx1(Math.abs(q), ip(y))}`]; }],
+        [() => [`${X}${sup(2)} ${MI} ${Y}`, x * x - y, `${ip(x)}${sup(2)} ${MI} ${ip(y)}`]],
+        [() => { const q = nz(-6, 6); return [poly([[1, X + Y], [q, '']]), x * y + q, `${ip(x)} × ${ip(y)} ${q < 0 ? MI : '+'} ${Math.abs(q)}`]; }],
+        [() => { const p = ri(2, 4); return [`${p}${X} ${MI} ${Y}${sup(2)}`, p * x - y * y, `${p} × ${ip(x)} ${MI} ${ip(y)}${sup(2)}`]; }],
+      ])[0]();
+      return NQ({ p: `${M(X + ' = ' + N(x) + ', ' + Y + ' = ' + N(y))}일 때, ${M(F[0])}의 값은?`, ans: qi(F[1]), hint: '두 문자에 각각 괄호를 씌워 대입해.', steps: [`${M(F[2])}`, `= ${N(F[1])}`] }); },
+    () => { const k = ri(2, 4), s = sgn(); const x = Q(s, k);
+      const F = pick([
+        () => { const a = ri(1, 6) * sgn(); return [frS(a, X), a * k * s, `${N(a)} ÷ ${qp(x)} = ${N(a)} × ${ip(s * k)}`]; },
+        () => { const p = k * ri(1, 4) * sgn(), q = nz(-6, 6); const val = p / k * s + q; return [poly([[p, X], [q, '']]), val, `${N(p)} × ${qp(x)} ${q < 0 ? MI : '+'} ${Math.abs(q)}`]; },
+      ])();
+      return NQ({ p: `${M(X + ' = ' + qh(x))}일 때, ${M(F[0])}의 값은?`, ans: qi(F[1]), hint: '분모에 분수를 대입하면 "÷ 분수"가 돼. 역수를 곱하면 편해.', steps: [`${M(F[2])}`, `= ${N(F[1])}`] }); },
+    () => { const T = pick([
+        () => { const c = pick([5, 10, 15, 20, 25, 30, 35, 40]); return [`섭씨온도 ${M(X)}°C를 화씨온도로 바꾸는 식은 ${M('(' + fr(9, 5) + X + ' + 32)')}°F야. 섭씨 ${c}°C는 화씨 몇 °F일까?`, 9 * c / 5 + 32, '°F', `${fr(9, 5)} × ${c} + 32 = ${9 * c / 5} + 32 = ${9 * c / 5 + 32}`]; },
+        () => { let a, h; do { a = ri(3, 12); h = ri(3, 12); } while ((a * h) % 2); return [`밑변 ${M(A_)} cm, 높이 ${M(v('h'))} cm인 삼각형의 넓이는 ${M(fr(1, 2) + A_ + v('h'))} cm²야. ${M(A_ + ' = ' + a + ', ' + v('h') + ' = ' + h)}일 때 넓이는?`, a * h / 2, 'cm²', `${fr(1, 2)} × ${a} × ${h} = ${a * h / 2}`]; },
+        () => { const t = ri(12, 25), x = ri(1, 6); return [`지면에서 1 km 높아질 때마다 기온이 6°C씩 내려가. 지면 기온이 ${t}°C일 때, 높이 ${M(X)} km에서의 기온은 ${M('(' + t + ' ' + MI + ' 6' + X + ')')}°C야. 높이 ${x} km의 기온은?`, t - 6 * x, '°C', `${t} ${MI} 6 × ${x} = ${N(t - 6 * x)}`]; },
+      ])();
+      return NQ({ p: T[0], ans: qi(T[1]), unit: T[2], hint: '주어진 값을 문자 자리에 그대로 넣어 계산해.', steps: [M(T[3])] }); },
+  ],
+  e3: [
+    () => { const A = nz(-5, 5), B = nz(-7, 7), C = nz(-9, 9); const terms = shuffle([[A, X + sup(2)], [B, X], [C, '']]); const ask = pick(['xc', 'dx2']);
+      const r = ask === 'xc' ? B + C : 2 + A;
+      return NQ({ p: `다항식 ${M(poly(terms))}에서 ${ask === 'xc' ? `${M(X)}의 계수와 상수항의 합` : `다항식의 차수와 ${M(X + sup(2))}의 계수의 합`}은?`, ans: qi(r), hint: '계수는 부호까지 포함이야! 차수는 가장 높은 차수를 봐.', steps: ask === 'xc' ? [`${M(X)}의 계수: ${N(B)}, 상수항: ${N(C)}`, `${N(B)} + ${ip(C)} = ${N(r)}`] : [`차수: 2, ${M(X + sup(2))}의 계수: ${N(A)}`, `2 + ${ip(A)} = ${N(r)}`] }); },
+    () => { const p = nz(-6, 6), q = nz(-6, 6), r = nz(-9, 9); const terms = [[p, X], [q, Y], [r, '']]; const ans = 3 + q + r;
+      return NQ({ p: `다항식 ${M(poly(terms))}에서 항의 개수를 ${M(A_)}, ${M(Y)}의 계수를 ${M(B_)}, 상수항을 ${M(C_)}라 할 때 ${M(A_ + ' + ' + B_ + ' + ' + C_)}의 값은?`, ans: qi(ans), hint: '항은 +, −로 나뉜 덩어리야. 계수와 상수항은 부호까지!', steps: [`항: ${M(poly([[p, X]]))}, ${M(poly([[q, Y]]))}, ${M(N(r))} → 3개`, `${M(A_ + ' = 3, ' + B_ + ' = ' + N(q) + ', ' + C_ + ' = ' + N(r))}`, `합: ${N(ans)}`] }); },
+    () => { const OK = [[`2${X} ${MI} 1`, '차수가 1인 다항식'], [fr(X, 3) + ' + 4', `${fr(1, 3)}${X} + 4, 차수 1`], [`${MI}${X}`, '항이 하나뿐이어도 차수가 1이면 일차식'], [`0.5${X} ${MI} 2`, '계수가 소수여도 일차식'], [`${X}${sup(2)} ${MI} ${X}${sup(2)} + 3${X}`, `정리하면 3${X} → 일차식!`], [`5 ${MI} ${Y}`, `${Y}에 대한 일차식`]];
+      const NO = [[`${X}${sup(2)} + 1`, '차수가 2'], [fr(3, X) + ' + 2', '분모에 문자 → 다항식이 아님'], ['7', '상수항뿐 → 차수 0'], [`${X}${sup(2)} ${MI} 2${X}`, '차수가 2'], [`2${X}${sup(2)} ${MI} 2${X}${sup(2)} + 5`, '정리하면 5 → 일차식 아님'], [`${X}${Y} + 1`, `${X}${Y}는 차수가 2`], [`0 × ${X} + 3`, '정리하면 3 → 일차식 아님']];
+      const ok = pick(OK), no = sample(NO, 3);
+      return CQ({ p: '다음 중 <b>일차식</b>인 것은?', ok: M(ok[0]), no: no.map(z => M(z[0])), hint: '먼저 식을 정리해 봐. 분모에 문자가 있으면 다항식이 아니야.', steps: [ok, ...no].map(z => `${M(z[0])} → ${z[1]}`) }); },
+    () => { const OK = [[`2${X}`, `${MI}${fr(X, 3)}`], [`${A_}${sup(2)}`, `3${A_}${sup(2)}`], ['5', `${MI}${fr(1, 2)}`], [`${X}${Y}`, `${MI}2${Y}${X}`]];
+      const NO = [[X, X + sup(2)], [`3${A_}`, `3${B_}`], ['2', `2${Y}`], [A_ + sup(2) + B_, A_ + B_ + sup(2)], [`4${X}`, `4${X}${sup(2)}`]];
+      const ok = pick(OK), no = sample(NO, 3);
+      return CQ({ p: '다음 중 <b>동류항</b>끼리 짝지어진 것은?', ok: M(ok.join(',&ensp;')), no: no.map(z => M(z.join(',&ensp;'))), hint: '문자와 차수가 모두 같아야 동류항이야. 상수항끼리도 동류항!', steps: [`${M(ok.join(', '))} → 문자와 차수가 같아서 동류항`] }); },
+  ],
+  e4: [
+    () => { let a, b, c, d, e, s, A, B; do { a = nz(-6, 6); b = nz(-9, 9); c = ri(2, 4); d = ri(1, 4); e = nz(-6, 6); s = sgn(); A = a + s * c * d; B = b + s * c * e; } while (A === 0);
+      const ok = lin(A, B); const no = [lin(A, b - s * c * e), lin(a + s * d, b + s * e), lin(a - s * c * d, B), lin(A, B + 2), lin(A + 1, B)];
+      return CQ({ p: simp('(' + lin(a, b) + ') ' + (s < 0 ? MI : '+') + ' ' + c + '(' + lin(d, e) + ')'), ok: M(ok), no: no.filter(z => z !== ok).map(M), hint: '괄호 앞의 수를 괄호 안 모든 항에 곱해. 앞이 −면 부호가 다 바뀌어!', steps: [`분배: ${M(lin(a, b) + ' ' + (s < 0 ? MI : '+') + ' ' + c * d + X + ' ' + ((s * e) < 0 ? MI : '+') + ' ' + Math.abs(c * e))}`, `동류항끼리: ${M(ok)}`] }); },
+    () => { let a, b, c, d, e, s, A, B; do { a = nz(-6, 6); b = nz(-9, 9); c = ri(2, 4); d = ri(1, 4); e = nz(-6, 6); s = sgn(); A = a + s * c * d; B = b + s * c * e; } while (A === 0);
+      return NQ({ p: `다음 식을 간단히 하면 ${M(A_ + X + ' + ' + B_)}일 때, ${M(A_ + ' + ' + B_)}의 값은? (단, ${M(A_ + ', ' + B_)}는 상수)<div class="data">${M('(' + lin(a, b) + ') ' + (s < 0 ? MI : '+') + ' ' + c + '(' + lin(d, e) + ')')}</div>`, ans: qi(A + B), hint: '먼저 식을 간단히 한 다음, x의 계수와 상수항을 더해.', steps: [`간단히 하면 ${M(lin(A, B))}`, `${M(A_ + ' = ' + N(A) + ', ' + B_ + ' = ' + N(B))}`, `${M(A_ + ' + ' + B_ + ' = ' + N(A + B))}`] }); },
+    () => { let p, q, a, b, plus, L, m1, m2, A, B;
+      do { [p, q] = sample([2, 3, 4, 6], 2); a = nz(-5, 5); b = nz(-5, 5); plus = Math.random() < 0.5; L = lcm(p, q); m1 = L / p; m2 = L / q; A = m1 + (plus ? m2 : -m2); B = m1 * a + (plus ? m2 * b : -m2 * b); } while (A === 0 || gcd(gcd(Math.abs(A), Math.abs(B) || L), L) !== 1);
+      const op = plus ? ' + ' : ' ' + MI + ' ';
+      const ok = fr(lin(A, B), L);
+      const no = [fr(lin(A, a + (plus ? b : -b)), L), fr(lin(m2 + (plus ? m1 : -m1), m2 * a + (plus ? m1 * b : -m1 * b)), L), fr(lin(A, m1 * a + (plus ? -m2 * b : m2 * b)), L), plus ? fr(lin(2, a + b), p + q) : fr(lin(A, -B), L)];
+      return CQ({ p: simp(fr(lin(1, a), p) + op + fr(lin(1, b), q)), ok: M(ok), no: no.filter(z => z !== ok && !z.includes('>0<')).map(M), hint: `분모를 최소공배수 ${L}${[0, 3, 6].includes(L % 10) ? '으로' : '로'} 통분해. 분자 전체에 곱하는 걸 잊지 마!`, steps: [`${M(fr((m1 === 1 ? '' : m1) + '(' + lin(1, a) + ')' + op + (m2 === 1 ? '' : m2) + '(' + lin(1, b) + ')', L))}`, `${M('= ' + ok)}`] }); },
+    () => { let a, b, c, d; do { a = nz(-5, 5); b = nz(-8, 8); c = nz(-9, 9); d = nz(-9, 9); } while (c - 2 * a === 0 || c - a === 0);
+      const P = [c - a, d - b]; const ok = lin(c - 2 * a, d - 2 * b);
+      return CQ({ p: `어떤 다항식에서 다항식 A를 빼야 할 것을 잘못하여 더했더니 다항식 B가 되었어. ${M('A = ' + lin(a, b) + ',&ensp;B = ' + lin(c, d))}일 때, 바르게 계산한 식은?`, ok: M(ok), no: [lin(P[0], P[1]), lin(c, d), lin(c + 2 * a, d + 2 * b), lin(c - 2 * a, d + 2 * b)].filter(z => z !== ok).map(M), hint: '먼저 "어떤 다항식"을 구하고, 그다음 바르게 빼 봐.', steps: [`어떤 다항식 = ${M('(' + lin(c, d) + ') ' + MI + ' (' + lin(a, b) + ') = ' + lin(P[0], P[1]))}`, `바른 계산: ${M('(' + lin(P[0], P[1]) + ') ' + MI + ' (' + lin(a, b) + ') = ' + ok)}`] }); },
+  ],
+  e5: [
+    () => { const k = ri(2, 6), m = pick([2, 3, 4, 5, 6].filter(z => z !== k)), p = pick([10, 20, 25, 30]), w = pick([200, 300, 400, 500]);
+      const T = pick([
+        [`한 개에 ${M(A_)}원인 사과 ${k}개와 한 개에 ${M(B_)}원인 배 ${m}개의 값`, `(${k}${A_} + ${m}${B_})원`, [`(${m}${A_} + ${k}${B_})원`, `${k * m}${A_}${B_}원`, `${k + m}(${A_} + ${B_})원`]],
+        [`시속 ${M(X)} km로 ${k}시간 동안 달린 거리`, `${k}${X} km`, [`${fr(X, k)} km`, `${fr(k, X)} km`, `(${X} + ${k}) km`]],
+        [`${M(X)} km의 거리를 시속 ${k} km로 갈 때 걸리는 시간`, `${fr(X, k)}시간`, [`${k}${X}시간`, `${fr(k, X)}시간`, `(${X} ${MI} ${k})시간`]],
+        [`정가가 ${M(A_)}원인 물건을 ${p}% 할인한 가격`, `${(100 - p) / 100}${A_}원`, [`(${A_} ${MI} ${p})원`, `${p / 100}${A_}원`, `${p}${A_}원`]],
+        [`${X}% 소금물 ${w} g에 녹아 있는 소금의 양`, `${w / 100}${X} g`, [`${w}${X} g`, `${fr(X, w / 100)} g`, `(${w} + ${X}) g`]],
+        [`십의 자리 숫자가 ${M(A_)}, 일의 자리 숫자가 ${M(B_)}인 두 자리 자연수`, `10${A_} + ${B_}`, [`${A_}${B_}`, `${A_} + ${B_}`, `10${B_} + ${A_}`]],
+        ((g) => [`한 변의 길이가 ${M(X)} cm인 정${NAMES[g]}각형의 둘레`, `${g}${X} cm`, [`${X}${sup(g)} cm`, `(${X} + ${g}) cm`, `${fr(X, g)} cm`]])(ri(3, 6)),
+        [`${M(A_)}의 ${k}배보다 ${m}만큼 작은 수`, `${k}${A_} ${MI} ${m}`, [`${k}(${A_} ${MI} ${m})`, `${m} ${MI} ${k}${A_}`, `${k}${A_} + ${m}`]],
+        [`한 권에 ${M(X)}원인 공책 ${k}권을 사고 10000원을 냈을 때의 거스름돈`, `(10000 ${MI} ${k}${X})원`, [`(${k}${X} ${MI} 10000)원`, `(10000 ${MI} ${X})원`, `${fr(10000, k + X)}원`]],
+      ]);
+      return CQ({ p: `다음을 문자를 사용한 식으로 나타내면?<div class="data">${T[0]}</div>`, ok: M(T[1]), no: T[2].map(M), hint: '말을 순서대로 식으로 옮기고, 곱셈 기호는 생략해.', steps: [`${T[0]} → ${M(T[1])}`] }); },
+  ],
+};
+
+/* ───────── 4. 일차방정식 ───────── */
+const eqh = (a, b, c, d) => M(lin(a, b) + ' = ' + lin(c, d));
+const G_EQ = {
+  q1: [
+    () => { const k = nz(-4, 4); const eqs = []; const seen = new Set();
+      const mk = (good) => { const a = nz(-5, 5), b = nz(-9, 9), c = ri(-4, 4); const d0 = a * k + b - c * k; const d = good ? d0 : d0 + nz(-3, 3); if (c === a) return null; return { h: eqh(a, b, c, d), a, b, c, d, good }; };
+      let ok; while (!ok) ok = mk(true); seen.add(ok.h);
+      while (eqs.length < 3) { const e = mk(false); if (e && !seen.has(e.h)) { seen.add(e.h); eqs.push(e); } }
+      const chk = e => `${e.h} → 좌변 ${N(e.a * k + e.b)}, 우변 ${N(e.c * k + e.d)} ${e.a * k + e.b === e.c * k + e.d ? '✔' : '✘'}`;
+      return CQ({ p: `다음 중 해가 ${M(X + ' = ' + N(k))}인 방정식은?`, ok: ok.h, no: eqs.map(e => e.h), hint: `각 방정식의 ${M(X)} 자리에 ${N(k)}를 넣어서 좌변과 우변이 같은지 확인해.`, steps: [ok, ...eqs].map(chk) }); },
+    () => { const ID = [`2(${X} + 1) = 2${X} + 2`, `3${X} ${MI} ${X} = 2${X}`, `${X} + ${X} + 1 = 2${X} + 1`, `4(${X} ${MI} 2) = 4${X} ${MI} 8`, `${MI}(${X} ${MI} 3) = 3 ${MI} ${X}`];
+      const NO = [`2${X} + 1 = 3`, `${X} + 3 = 3${X}`, `3${X} ${MI} 1 = 3${X} + 1`, `${X} + 4 = 2`, `2${X} = ${X}`, `${X}${sup(2)} = ${X}`];
+      const ok = pick(ID);
+      return CQ({ p: `다음 중 ${M(X)}의 값에 관계없이 항상 참인 등식(<b>항등식</b>)은?`, ok: M(ok), no: sample(NO, 3).map(M), hint: '좌변을 정리했을 때 우변과 완전히 똑같아지면 항등식이야.', steps: [`${M(ok)} → 좌변을 정리하면 우변과 똑같아서 항등식`] }); },
+    () => { const OK = [[`2${X} + 3 = ${X} ${MI} 1`, `정리하면 ${X} + 4 = 0 → 일차방정식`], [`${X}${sup(2)} + 2${X} = ${X}${sup(2)} ${MI} 1`, `${X}${sup(2)}이 지워져서 2${X} + 1 = 0 → 일차방정식!`], [`${fr(X, 2)} = 3`, '일차방정식'], [`5 ${MI} ${X} = 2${X}`, `정리하면 ${MI}3${X} + 5 = 0`]];
+      const NO = [[`3${X} ${MI} 1 = 3${X} + 2`, `${X}가 지워져서 ${MI}3 = 0 → 일차방정식 아님`], [`2(${X} ${MI} 1) = 2${X} ${MI} 2`, '항등식'], [`${X}${sup(2)} = 4`, '이차방정식'], [`3${X} + 5`, '등식이 아님'], [`${X}${sup(2)} ${MI} ${X} = 0`, '이차방정식']];
+      const ok = pick(OK), no = sample(NO, 3);
+      return CQ({ p: '다음 중 <b>일차방정식</b>인 것은?', ok: M(ok[0]), no: no.map(z => M(z[0])), hint: '모든 항을 좌변으로 옮겨 정리했을 때 (일차식) = 0 꼴이 되는지 봐.', steps: [ok, ...no].map(z => `${M(z[0])} → ${z[1]}`) }); },
+    () => { const T = [`${A_} + 3 = ${B_} + 3`, `${A_} ${MI} 5 = ${B_} ${MI} 5`, `${MI}2${A_} = ${MI}2${B_}`, `${fr(A_, 4)} = ${fr(B_, 4)}`, `3${A_} + 1 = 3${B_} + 1`, `${A_} ${MI} ${C_} = ${B_} ${MI} ${C_}`];
+      const F = [`${A_} + 2 = ${B_} ${MI} 2`, `2${A_} = ${fr(B_, 2)}`, `${A_} ${MI} 1 = 1 ${MI} ${B_}`, `3${A_} = ${B_} + 3`, `${MI}${A_} = ${B_}`];
+      const ok = pick(F);
+      return CQ({ p: `${M(A_ + ' = ' + B_)}일 때, 다음 중 옳지 <b>않은</b> 것은?`, ok: M(ok), no: sample(T, 3).map(M), hint: '양변에 "같은 수"를 더하거나 빼거나 곱하거나 나누어야 등식이 유지돼.', steps: [`${M(ok)} → 양변에 서로 다른 계산을 했어.`] }); },
+    () => { const a0 = nz(-6, 6), k = nz(-5, 5), b = nz(-9, 9); const c = a0 * k + b;
+      return NQ({ p: `${M(X)}에 대한 방정식 ${M(A_ + X + ' ' + (b < 0 ? MI : '+') + ' ' + Math.abs(b) + ' = ' + N(c))}의 해가 ${M(X + ' = ' + N(k))}일 때, 상수 ${M(A_)}의 값은?`, ans: qi(a0), hint: `해를 ${M(X)}에 대입하면 ${M(A_)}에 대한 방정식이 돼.`, steps: [`${M(A_ + ' × ' + ip(k) + ' ' + (b < 0 ? MI : '+') + ' ' + Math.abs(b) + ' = ' + N(c))}`, `${M(N(k) + A_ + ' = ' + N(c - b))} → ${M(A_ + ' = ' + N(a0))}`] }); },
+  ],
+  q2: [
+    () => { const a = nz(-9, 9), x = ri(-9, 9), b = nz(-15, 15); const c = a * x + b; if (Math.abs(a) === 1) return G_EQ.q2[1]();
+      return NQ({ p: `일차방정식 ${M(lin(a, b) + ' = ' + N(c))}의 해는?`, pre: M(X + ' ='), ans: qi(x), hint: '상수항을 우변으로 이항하고, 양변을 x의 계수로 나눠.', steps: [`이항: ${M(lin(a, 0) + ' = ' + N(c) + ' ' + (b < 0 ? '+' : MI) + ' ' + Math.abs(b))}`, `${M(lin(a, 0) + ' = ' + N(c - b))}`, `${M(X + ' = ' + N(x))}`] }); },
+    () => { let a, b, c, d, x; do { a = nz(-9, 9); c = nz(-9, 9); x = ri(-9, 9); b = nz(-15, 15); } while (a === c); d = a * x + b - c * x;
+      return NQ({ p: `일차방정식 ${eqh(a, b, c, d)}의 해는?`, pre: M(X + ' ='), ans: qi(x), hint: 'x항은 좌변으로, 상수항은 우변으로 이항해. 이항하면 부호가 바뀌어!', steps: [`이항: ${M(lin(a, 0) + ' ' + (c < 0 ? '+' : MI) + ' ' + lin(Math.abs(c), 0) + ' = ' + N(d) + ' ' + (b < 0 ? '+' : MI) + ' ' + Math.abs(b))}`, `${M(lin(a - c, 0) + ' = ' + N(d - b))}`, `${M(X + ' = ' + N(x))}`] }); },
+  ],
+  q3: [
+    () => { let p, q, r, u, x, w; do { p = sgn() * ri(2, 5); r = sgn() * ri(2, 5); q = nz(-6, 6); u = nz(-6, 6); x = ri(-8, 8); w = p * (x + q) - r * (x + u); } while (p === r);
+      const pre = c => c === -1 ? MI : '' + N(c);
+      return NQ({ p: `일차방정식 ${M(pre(p) + '(' + lin(1, q) + ') = ' + pre(r) + '(' + lin(1, u) + ')' + (w ? (w < 0 ? ' ' + MI + ' ' : ' + ') + Math.abs(w) : ''))}의 해는?`, pre: M(X + ' ='), ans: qi(x), hint: '먼저 분배법칙으로 괄호를 풀어.', steps: [`괄호 풀기: ${M(lin(p, p * q) + ' = ' + lin(r, r * u + w))}`, `이항: ${M(lin(p - r, 0) + ' = ' + N(r * u + w - p * q))}`, `${M(X + ' = ' + N(x))}`] }); },
+    () => { let a, b, c, d, x; do { a = nz(-9, 9); c = nz(-9, 9); x = ri(-9, 9); b = nz(-40, 40); } while (a === c); d = a * x + b - c * x;
+      const dc = (n, first) => { if (n === 0) return ''; const s = dstr(Math.abs(n)); return first ? (n < 0 ? MI : '') + s : (n < 0 ? ' ' + MI + ' ' : ' + ') + s; };
+      const side = (cx, cc) => (cx ? dc(cx, true) + X : '') + (cc ? dc(cc, !cx) : '') || '0';
+      return NQ({ p: `일차방정식 ${M(side(a, b) + ' = ' + side(c, d))}의 해는?`, pre: M(X + ' ='), ans: qi(x), hint: '양변에 10을 곱해서 계수를 정수로 만들어.', steps: [`양변 × 10: ${eqh(a, b, c, d)}`, `${M(lin(a - c, 0) + ' = ' + N(d - b))}`, `${M(X + ' = ' + N(x))}`] }); },
+    () => { let p, r, a, b, c, x, L, m1, m2;
+      for (;;) { [p, r] = sample([2, 3, 4, 5, 6], 2); a = ri(-5, 5); b = ri(-5, 5); c = nz(-3, 3); L = lcm(p, r); m1 = L / p; m2 = L / r; const num = m2 * b + c * L - m1 * a, den = m1 - m2; if (den !== 0 && num % den === 0 && Math.abs(num / den) <= 15) { x = num / den; break; } }
+      return NQ({ p: `일차방정식 ${M(fr(lin(1, a), p) + ' = ' + fr(lin(1, b), r) + (c < 0 ? ' ' + MI + ' ' : ' + ') + Math.abs(c))}의 해는?`, pre: M(X + ' ='), ans: qi(x), hint: `양변에 분모의 최소공배수 ${L}을 곱해.`, steps: [`양변 × ${L}: ${M((m1 === 1 ? '' : m1) + '(' + lin(1, a) + ') = ' + (m2 === 1 ? '' : m2) + '(' + lin(1, b) + ')' + (c < 0 ? ' ' + MI + ' ' : ' + ') + Math.abs(c * L))}`, `${M(lin(m1, m1 * a) + ' = ' + lin(m2, m2 * b + c * L))}`, (m1 - m2 === 1 ? `${M(X + ' = ' + N(x))}` : `${M(lin(m1 - m2, 0) + ' = ' + N(m2 * b + c * L - m1 * a))} → ${M(X + ' = ' + N(x))}`)] }); },
+    () => { let p, q, a, b, x; for (;;) { [p, q] = sample([2, 3, 4, 5, 7], 2); a = ri(-5, 5); b = ri(-5, 5); const num = p * b - q * a, den = q - p; if (num % den === 0 && Math.abs(num / den) <= 15 && a !== b) { x = num / den; break; } }
+      const pr = c => c === 0 ? X : '(' + lin(1, c) + ')';
+      return NQ({ p: `다음 비례식을 만족하는 ${M(X)}의 값은?<div class="data">${M(pr(a) + ' : ' + p + ' = ' + pr(b) + ' : ' + q)}</div>`, pre: M(X + ' ='), ans: qi(x), hint: '비례식에서 (외항의 곱) = (내항의 곱)이야.', steps: [`${M(q + pr(a) + ' = ' + p + pr(b))}`, `${M(lin(q, q * a) + ' = ' + lin(p, p * b))}`, q - p === 1 ? `${M(X + ' = ' + N(x))}` : `${M(lin(q - p, 0) + ' = ' + N(p * b - q * a))} → ${M(X + ' = ' + N(x))}`] }); },
+  ],
+  q4: [
+    () => { const x = ri(6, 40); const big = Math.random() < 0.5; const S = 3 * x;
+      return NQ({ p: `연속하는 세 자연수의 합이 ${S}일 때, 세 수 중 가장 ${big ? '큰' : '작은'} 수는?`, ans: qi(big ? x + 1 : x - 1), hint: `가운데 수를 ${M(X)}로 놓으면 세 수는 ${M(X + ' ' + MI + ' 1, ' + X + ', ' + X + ' + 1')}이야.`, steps: [`${M('(' + X + ' ' + MI + ' 1) + ' + X + ' + (' + X + ' + 1) = ' + S)}`, `${M('3' + X + ' = ' + S)} → ${M(X + ' = ' + x)}`, `세 수: ${x - 1}, ${x}, ${x + 1} → 답 ${big ? x + 1 : x - 1}`] }); },
+    () => { let k, B, t, A; do { k = pick([2, 3]); B = ri(5, 15); t = ri(2, 15); A = k * (B + t) - t; } while (A < 28 || A > 55);
+      return NQ({ p: `현재 아버지의 나이는 ${A}세, 아들의 나이는 ${B}세야. 아버지의 나이가 아들의 나이의 ${k}배가 되는 것은 몇 년 후일까?`, ans: qi(t), unit: '년 후', hint: `${M(X)}년 후에는 두 사람 모두 ${M(X)}살씩 더 먹어.`, steps: [`${M(A + ' + ' + X + ' = ' + k + '(' + B + ' + ' + X + ')')}`, `${M(A + ' + ' + X + ' = ' + k * B + ' + ' + k + X)}`, `${M(X + ' = ' + t)}`] }); },
+    () => { const n = ri(3, 8), x = ri(3, 15) * 100, e = pick([300, 500, 700]); const T = n * x + e;
+      return NQ({ p: `한 자루에 ${M(X)}원인 펜 ${n}자루와 ${e}원짜리 지우개 1개를 샀더니 모두 ${T}원이었어. 펜 한 자루의 값은?`, ans: qi(x), unit: '원', hint: '(펜 값) × (자루 수) + (지우개 값) = (전체 값)으로 식을 세워.', steps: [`${M(n + X + ' + ' + e + ' = ' + T)}`, `${M(n + X + ' = ' + (T - e))}`, `${M(X + ' = ' + x)}`] }); },
+    () => { const [a, b] = pick([[2, 3], [3, 6], [2, 6], [4, 6], [3, 4], [4, 12]]); const L = lcm(a, b), m = ri(1, 3), d = m * L, T = d / a + d / b;
+      return NQ({ p: `집에서 도서관까지 갈 때는 시속 ${b} km로, 올 때는 같은 길을 시속 ${a} km로 걸었더니 모두 ${T}시간이 걸렸어. 집에서 도서관까지의 거리는?`, ans: qi(d), unit: 'km', hint: `거리를 ${M(X)} km라 하면, 시간 = 거리 ÷ 속력이야.`, steps: [`${M(fr(X, b) + ' + ' + fr(X, a) + ' = ' + T)}`, `양변 × ${L}: ${M(lin(L / b, 0) + ' + ' + lin(L / a, 0) + ' = ' + T * L)}`, `${M(X + ' = ' + d)}`] }); },
+    () => { let x, a, b, r1, r2; do { x = ri(5, 15); a = ri(3, 6); b = a + ri(1, 2); r1 = ri(2, 9); r2 = (b - a) * x - r1; } while (r2 <= 0 || r1 >= x);
+      const askKids = Math.random() < 0.5; const candy = a * x + r1;
+      return NQ({ p: `사탕을 학생들에게 나누어 주는데, 한 명에게 ${a}개씩 주면 ${r1}개가 남고, ${b}개씩 주면 ${r2}개가 부족해. ${askKids ? '학생은 몇 명일까?' : '사탕은 모두 몇 개일까?'}`, ans: qi(askKids ? x : candy), unit: askKids ? '명' : '개', hint: `학생 수를 ${M(X)}로 놓고, 두 방법으로 계산한 사탕 수가 같다고 식을 세워.`, steps: [`${M(a + X + ' + ' + r1 + ' = ' + b + X + ' ' + MI + ' ' + r2)}`, `${M(X + ' = ' + x)} (학생 수)`, askKids ? `학생은 ${x}명` : `사탕: ${a} × ${x} + ${r1} = ${candy}개`] }); },
+    () => { const x = ri(3, 15), k = ri(2, 8); const P = 2 * (2 * x + k);
+      return NQ({ p: `가로의 길이가 세로의 길이보다 ${k} cm 긴 직사각형의 둘레가 ${P} cm야. 세로의 길이는?`, ans: qi(x), unit: 'cm', hint: `세로를 ${M(X)} cm라 하면 가로는 ${M('(' + X + ' + ' + k + ')')} cm야.`, steps: [`${M('2{' + X + ' + (' + X + ' + ' + k + ')} = ' + P)}`, `${M('4' + X + ' + ' + 2 * k + ' = ' + P)}`, `${M(X + ' = ' + x)}`] }); },
+  ],
+};
+
+/* ───────── 5. 좌표평면과 그래프 ───────── */
+const pt = (a, b) => `(${N(a)}, ${N(b)})`;
+const QUAD = ['제1사분면', '제2사분면', '제3사분면', '제4사분면', '어느 사분면에도 속하지 않는다'];
+const quadOf = (sx, sy) => sx === 0 || sy === 0 ? 4 : sx > 0 ? (sy > 0 ? 0 : 3) : (sy > 0 ? 1 : 2);
+function quadOpts(ci) { const others = shuffle([0, 1, 2, 3, 4].filter(i => i !== ci)).slice(0, 3); return [ci, ...others].sort((a, b) => a - b).map(i => QUAD[i]); }
+const G_COORD = {
+  c1: [
+    () => { let a, b; do { a = nz(-5, 5); b = nz(-5, 5); } while (Math.abs(a) === Math.abs(b));
+      return CQ({ p: '좌표평면 위의 점 A의 좌표는?', fig: gridFig([{ x: a, y: b, name: 'A' }]), ok: M(pt(a, b)), no: [pt(b, a), pt(-a, b), pt(a, -b), pt(-a, -b)].map(M), hint: '(x좌표, y좌표) 순서야. 먼저 좌우(x), 그다음 위아래(y)!', steps: [`x좌표 ${N(a)}, y좌표 ${N(b)} → ${M('A' + pt(a, b))}`] }); },
+    () => { let a, b; do { a = nz(-6, 6); b = nz(-6, 6); } while (Math.abs(a) === Math.abs(b)); const ax = pick([['x축', [a, -b], 'y좌표의 부호만 바뀌어'], ['y축', [-a, b], 'x좌표의 부호만 바뀌어'], ['원점', [-a, -b], 'x, y좌표의 부호가 모두 바뀌어']]);
+      return CQ({ p: `<b>${ax[0]}</b>에 대하여 대칭인 두 점 중 한 점의 좌표가 ${M(pt(a, b))}일 때, 다른 한 점의 좌표는?`, ok: M(pt(...ax[1])), no: [pt(a, -b), pt(-a, b), pt(-a, -b), pt(b, a)].map(M), hint: ax[2] + '.', steps: [`${ax[0]} 대칭 → ${ax[2]} → ${M(pt(...ax[1]))}`] }); },
+    () => { let x1, x2, y1, x3, y3, base, h; do { x1 = ri(-5, 0); x2 = ri(1, 5); y1 = ri(-5, 1); x3 = ri(-4, 4); y3 = ri(-5, 5); base = x2 - x1; h = Math.abs(y3 - y1); } while (h < 2 || (base * h) % 2 || (x3 === x1 && y3 === y1));
+      const pts = [{ x: x1, y: y1, name: 'A', dx: -16 }, { x: x2, y: y1, name: 'B' }, { x: x3, y: y3, name: 'C' }];
+      return NQ({ p: `세 점 ${M('A' + pt(x1, y1) + ', B' + pt(x2, y1) + ', C' + pt(x3, y3))}을 꼭짓점으로 하는 삼각형 ABC의 넓이는?`, fig: gridFig(pts, [[x1, y1], [x2, y1], [x3, y3]]), ans: qi(base * h / 2), hint: '변 AB가 x축과 평행해. AB를 밑변으로 하고 C까지의 높이를 세어 봐.', steps: [`밑변 AB = ${x2} ${MI} ${ip(x1)} = ${base}`, `높이 = |${N(y3)} ${MI} ${ip(y1)}| = ${h}`, `넓이 = ${fr(1, 2)} × ${base} × ${h} = ${base * h / 2}`] }); },
+  ],
+  c2: [
+    () => { const a = Math.random() < 0.2 ? 0 : nz(-9, 9), b = a === 0 ? nz(-9, 9) : (Math.random() < 0.15 ? 0 : nz(-9, 9)); const ci = quadOf(Math.sign(a), Math.sign(b));
+      return CQ({ p: `점 ${M('P' + pt(a, b))}는 어디에 있을까?`, ok: QUAD[ci], no: QUAD.filter((_, i) => i !== ci), order: quadOpts(ci), hint: '제1(+,+), 제2(−,+), 제3(−,−), 제4(+,−). 좌표에 0이 있으면 축 위의 점이야.', steps: [`x좌표 ${a > 0 ? '양수' : a < 0 ? '음수' : '0'}, y좌표 ${b > 0 ? '양수' : b < 0 ? '음수' : '0'} → ${QUAD[ci]}`] }); },
+    () => { const sa = sgn(), sb = sgn();
+      const E = [[A_, sa], [B_, sb], [MI + A_, -sa], [MI + B_, -sb], [A_ + B_, sa * sb], [MI + A_ + B_, -sa * sb], [fr(A_, B_), sa * sb], [A_ + sup(2), 1], [A_ + ' ' + MI + ' ' + B_, sa !== sb ? sa : 0], [B_ + ' ' + MI + ' ' + A_, sa !== sb ? sb : 0]].filter(e => e[1] !== 0);
+      let ex, ey; do { ex = pick(E); ey = pick(E); } while (ex[0] === ey[0]);
+      const ci = quadOf(ex[1], ey[1]);
+      const qd_ = quadOf(sa, sb);
+      const cond = Math.random() < 0.5 ? `${M(A_ + (sa > 0 ? ' &gt; ' : ' &lt; ') + '0, ' + B_ + (sb > 0 ? ' &gt; ' : ' &lt; ') + '0')}일 때` : `점 ${M('(' + A_ + ', ' + B_ + ')')}가 ${QUAD[qd_]} 위의 점일 때`;
+      return CQ({ p: `${cond}, 점 ${M('P(' + ex[0] + ', ' + ey[0] + ')')}는 어느 사분면 위의 점일까?`, ok: QUAD[ci], no: QUAD.filter((_, i) => i !== ci && i !== 4), order: [0, 1, 2, 3].map(i => QUAD[i]), hint: '먼저 a, b의 부호를 정하고, 각 좌표의 부호를 하나씩 따져 봐.', steps: [`${M(A_)}는 ${sa > 0 ? '양수' : '음수'}, ${M(B_)}는 ${sb > 0 ? '양수' : '음수'}`, `${M(ex[0])}는 ${ex[1] > 0 ? '양수' : '음수'}, ${M(ey[0])}는 ${ey[1] > 0 ? '양수' : '음수'}`, `→ ${QUAD[ci]}`] }); },
+  ],
+  c3: [
+    () => { const a = pick([qi(2), qi(3), qi(-2), qi(-3), qi(4), qi(-4), Q(1, 2), Q(-1, 2), Q(3, 2), Q(-3, 2), Q(2, 3), Q(-2, 3)]); const p = a.d * nz(-4, 4), r = a.d * nz(-4, 4); const q = qm(a, qi(p)), y = qm(a, qi(r)); if (p === r) return G_COORD.c3[0]();
+      return NQ({ p: `${M(Y)}가 ${M(X)}에 정비례하고, ${M(X + ' = ' + N(p))}일 때 ${M(Y + ' = ' + qh(q))}인 관계가 있어. ${M(X + ' = ' + N(r))}일 때 ${M(Y)}의 값은?`, ans: y, hint: `${M(Y + ' = ' + A_ + X)}에 대입해서 ${M(A_)}부터 구해.`, steps: [`${M(qh(q) + ' = ' + A_ + ' × ' + ip(p))} → ${M(A_ + ' = ' + qh(a))}`, `${M(Y + ' = ' + qh(a) + X)}`, `${M(X + ' = ' + N(r))} → ${M(Y + ' = ' + qh(y))}`] }); },
+    () => { const p = nz(-6, 6), q = nz(-12, 12); const a = Q(q, p);
+      return NQ({ p: `정비례 관계 ${M(Y + ' = ' + A_ + X)}의 그래프가 점 ${M(pt(p, q))}${jp(q, '을/를')} 지날 때, 상수 ${M(A_)}의 값은?`, ans: a, hint: '그래프가 점을 지나면, 그 점의 좌표를 식에 대입할 수 있어.', steps: [`${M(N(q) + ' = ' + A_ + ' × ' + ip(p))}`, `${M(A_ + ' = ' + qh(a))}`] }); },
+    () => { const a = sgn() * ri(2, 4), p = nz(-4, 4), k = nz(-5, 5); if (p === k) return G_COORD.c3[2]();
+      return NQ({ p: `정비례 관계 ${M(Y + ' = ' + A_ + X)}의 그래프가 두 점 ${M(pt(p, a * p))}, ${M('(' + v('k') + ', ' + N(a * k) + ')')}${jp(a * k, '을/를')} 지날 때, ${M(v('k'))}의 값은?`, ans: qi(k), hint: '첫 번째 점으로 a를 구하고, 두 번째 점을 대입해.', steps: [`${M(N(a * p) + ' = ' + A_ + ' × ' + ip(p))} → ${M(A_ + ' = ' + N(a))}`, `${M(N(a * k) + ' = ' + N(a) + ' × ' + v('k'))} → ${M(v('k') + ' = ' + N(k))}`] }); },
+    () => { const T = [['원점을 지나는 직선이다.', 1], [`${M(A_ + ' &gt; 0')}이면 제1사분면과 제3사분면을 지난다.`, 1], [`${M(A_ + ' &lt; 0')}이면 ${M(X)}의 값이 증가할 때 ${M(Y)}의 값은 감소한다.`, 1], [`${M('|' + A_ + '|')}가 클수록 ${M(Y)}축에 가깝다.`, 1], [`점 ${M('(1, ' + A_ + ')')}를 지난다.`, 1]];
+      const F = [[`${M(A_ + ' &lt; 0')}이면 제1사분면과 제3사분면을 지난다.`, `${M(A_ + ' &lt; 0')}이면 제2, 4사분면을 지나.`], ['원점을 지나지 않는다.', '정비례 그래프는 항상 원점을 지나.'], [`${M('|' + A_ + '|')}가 클수록 ${M(X)}축에 가깝다.`, `${M('|' + A_ + '|')}가 클수록 ${M(Y)}축에 가까워.`], [`${M(A_ + ' &gt; 0')}이면 ${M(X)}의 값이 증가할 때 ${M(Y)}의 값은 감소한다.`, `${M(A_ + ' &gt; 0')}이면 ${M(X)}가 증가할 때 ${M(Y)}도 증가해.`], ['한 쌍의 매끄러운 곡선이다.', '그건 반비례 그래프야. 정비례는 직선!']];
+      const ok = pick(F);
+      return CQ({ p: `정비례 관계 ${M(Y + ' = ' + A_ + X)} (${M(A_ + ' ≠ 0')})의 그래프에 대한 설명으로 옳지 <b>않은</b> 것은?`, ok: ok[0], no: sample(T, 3).map(z => z[0]), hint: 'a > 0일 때와 a < 0일 때 그래프를 각각 그려 봐.', steps: [ok[1]] }); },
+    () => { const T = pick([
+        () => { const r = ri(2, 6), t = ri(4, 15); return [`1분에 ${r} L씩 물이 나오는 수도꼭지로 물을 받아. ${M(X)}분 동안 받은 물의 양을 ${M(Y)} L라 할 때, ${r * t} L를 받는 데 걸리는 시간은?`, t, '분', [`${M(Y + ' = ' + r + X)}`, `${M(r * t + ' = ' + r + X)} → ${M(X + ' = ' + t)}`]]; },
+        () => { const r = pick([40, 50, 60, 70, 80]), t = ri(2, 6); return [`일정한 빠르기로 1시간에 ${r} km를 가는 자동차가 있어. ${M(X)}시간 동안 간 거리를 ${M(Y)} km라 할 때, ${t}시간 동안 간 거리는?`, r * t, 'km', [`${M(Y + ' = ' + r + X)}`, `${M(X + ' = ' + t)} → ${M(Y + ' = ' + r * t)}`]]; },
+      ])();
+      return NQ({ p: T[0], ans: qi(T[1]), unit: T[2], hint: '한쪽이 2배, 3배가 되면 다른 쪽도 2배, 3배 → 정비례 y = ax!', steps: T[3] }); },
+  ],
+  c4: [
+    () => { let p, q, a, r; do { p = nz(-6, 6); q = nz(-6, 6); a = p * q; const ds = []; for (let i = 1; i <= Math.abs(a); i++) if (a % i === 0) ds.push(i); r = pick(ds) * sgn(); } while (r === p || Math.abs(a) < 4);
+      return NQ({ p: `${M(Y)}가 ${M(X)}에 반비례하고, ${M(X + ' = ' + N(p))}일 때 ${M(Y + ' = ' + N(q))}인 관계가 있어. ${M(X + ' = ' + N(r))}일 때 ${M(Y)}의 값은?`, ans: qi(a / r), hint: `반비례는 ${M(X + Y + ' = ' + A_)} (일정)이야.`, steps: [`${M(A_ + ' = ' + ip(p) + ' × ' + ip(q) + ' = ' + N(a))}`, `${M(Y + ' = ' + frS(a, X))}`, `${M(X + ' = ' + N(r))} → ${M(Y + ' = ' + N(a / r))}`] }); },
+    () => { const p = nz(-8, 8), q = nz(-8, 8);
+      return NQ({ p: `반비례 관계 ${M(Y + ' = ' + fr(A_, X))}의 그래프가 점 ${M(pt(p, q))}${jp(q, '을/를')} 지날 때, 상수 ${M(A_)}의 값은?`, ans: qi(p * q), hint: '점의 좌표를 대입하면 a = xy야.', steps: [`${M(A_ + ' = ' + ip(p) + ' × ' + ip(q) + ' = ' + N(p * q))}`] }); },
+    () => { const T = [['원점을 지나지 않는다.', 1], [`${M(A_ + ' &gt; 0')}이면 그래프는 제1사분면과 제3사분면에 있다.`, 1], ['좌표축에 한없이 가까워지는 한 쌍의 매끄러운 곡선이다.', 1], [`${M(A_ + ' &lt; 0')}이면 그래프는 제2사분면과 제4사분면에 있다.`, 1], [`점 ${M('(1, ' + A_ + ')')}를 지난다.`, 1]];
+      const F = [['원점을 지나는 직선이다.', '반비례 그래프는 원점을 지나지 않는 곡선이야.'], [`${M(A_ + ' &gt; 0')}이면 그래프는 제2사분면과 제4사분면에 있다.`, `${M(A_ + ' &gt; 0')}이면 제1, 3사분면이야.`], [`${M(X)}축과 한 점에서 만난다.`, '좌표축에 가까워지기만 하고 만나지는 않아.'], [`${M(A_ + ' &gt; 0')}일 때, 각 사분면에서 ${M(X)}의 값이 증가하면 ${M(Y)}의 값도 증가한다.`, `${M(A_ + ' &gt; 0')}이면 각 사분면에서 ${M(X)}가 증가할 때 ${M(Y)}는 감소해.`]];
+      const ok = pick(F);
+      return CQ({ p: `반비례 관계 ${M(Y + ' = ' + fr(A_, X))} (${M(A_ + ' ≠ 0')})의 그래프에 대한 설명으로 옳지 <b>않은</b> 것은?`, ok: ok[0], no: sample(T, 3).map(z => z[0]), hint: '반비례 그래프는 원점을 지나지 않는 한 쌍의 곡선이야.', steps: [ok[1]] }); },
+    () => { const T = pick([
+        () => { const A = pick([20, 24, 30, 36]), n = pick([2, 3, 4, 5, 6]); const B = pick([12, 15, 20, 24, 30, 40, 60].filter(b => (A * n) % b === 0 && b !== A)); if (!B) return null; return [`톱니가 ${A}개인 톱니바퀴 A가 1분에 ${n}바퀴 돌 때, A와 맞물린 톱니가 ${M(X)}개인 톱니바퀴 B는 1분에 ${M(Y)}바퀴 돌아. B의 톱니가 ${B}개일 때 B는 1분에 몇 바퀴 돌까?`, A * n / B, '바퀴', [`맞물린 톱니 수는 같으니까 ${M(X + Y + ' = ' + A + ' × ' + n + ' = ' + A * n)}`, `${M(Y + ' = ' + fr(A * n, X))} → ${M(X + ' = ' + B)}일 때 ${M(Y + ' = ' + A * n / B)}`]]; },
+        () => { const S = pick([12, 18, 24, 36, 48]); const ds = []; for (let i = 2; i < S; i++) if (S % i === 0) ds.push(i); const w = pick(ds); return [`넓이가 ${S} cm²인 직사각형의 가로가 ${M(X)} cm, 세로가 ${M(Y)} cm야. 가로가 ${w} cm일 때 세로는?`, S / w, 'cm', [`${M(X + Y + ' = ' + S)} → ${M(Y + ' = ' + fr(S, X))}`, `${M(X + ' = ' + w)} → ${M(Y + ' = ' + S / w)}`]]; },
+        () => { const W = pick([60, 72, 90, 120]); const ds = []; for (let i = 2; i <= 12; i++) if (W % i === 0) ds.push(i); const n = pick(ds); return [`물 ${W} L를 ${M(X)}개의 통에 똑같이 나누어 담으면 한 통에 ${M(Y)} L씩 담겨. 통이 ${n}개일 때, 한 통에 담기는 물의 양은?`, W / n, 'L', [`${M(Y + ' = ' + fr(W, X))}`, `${M(X + ' = ' + n)} → ${M(Y + ' = ' + W / n)}`]]; },
+      ])();
+      if (!T) return G_COORD.c4[3]();
+      return NQ({ p: T[0], ans: qi(T[1]), unit: T[2], hint: '한쪽이 2배가 될 때 다른 쪽이 ½배가 되면 반비례야.', steps: T[3] }); },
+    () => { let p, q, a, r; do { p = nz(-6, 6); q = nz(-6, 6); a = p * q; const ds = []; for (let i = 1; i <= Math.abs(a); i++) if (a % i === 0) ds.push(i); r = pick(ds) * sgn(); } while (r === p || Math.abs(a) < 4);
+      return NQ({ p: `반비례 관계 ${M(Y + ' = ' + fr(A_, X))}의 그래프가 두 점 ${M(pt(p, q))}, ${M('(' + N(r) + ', ' + v('k') + ')')}를 지날 때, ${M(v('k'))}의 값은?`, ans: qi(a / r), hint: '첫 번째 점으로 a를 먼저 구해.', steps: [`${M(A_ + ' = ' + ip(p) + ' × ' + ip(q) + ' = ' + N(a))}`, `${M(v('k') + ' = ' + N(a) + ' ÷ ' + ip(r) + ' = ' + N(a / r))}`] }); },
+  ],
+};
+
+/* ───────── 6. 기본 도형 ───────── */
+function crossFig(phi1, th, labels) { // 두 직선, labels: {0:..,1:..,2:..,3:..} 영역 0=phi1~phi1+th, 1, 2, 3 반시계
+  const cx = 120, cy = 80, R = 95; let s = lineThrough(cx, cy, R, phi1) + lineThrough(cx, cy, R, phi1 + th);
+  const bounds = [phi1, phi1 + th, phi1 + 180, phi1 + th + 180, phi1 + 360];
+  for (const k in labels) { const L = labels[k]; s += arcLabel(cx, cy, 20, bounds[k], bounds[+k + 1], L.t, L.hl); }
+  s += `<circle class="dot" cx="${cx}" cy="${cy}" r="2.5"/>`;
+  return SV(240, 160, s);
+}
+function parallelFig(phi, marks, zig) {
+  const W = 260, yl = 40, ym = 130, mid = 130; const dx = 45 / Math.tan(phi * Math.PI / 180);
+  const P = [mid + dx, yl], Qp = [mid - dx, ym];
+  let s = `<line class="ln" x1="10" y1="${yl}" x2="${W - 20}" y2="${yl}"/><line class="ln" x1="10" y1="${ym}" x2="${W - 20}" y2="${ym}"/>`;
+  s += `<text class="tk" x="${W - 14}" y="${yl + 4}">l</text><text class="tk" x="${W - 14}" y="${ym + 4}">m</text>`;
+  const [ax, ay] = P2(P[0], P[1], 40, phi), [bx, by] = P2(Qp[0], Qp[1], 40, phi + 180);
+  s += `<line class="ln" x1="${f1(ax)}" y1="${f1(ay)}" x2="${f1(bx)}" y2="${f1(by)}"/>`;
+  const rng = { UR: [0, phi], UL: [phi, 180], LL: [180, 180 + phi], LR: [180 + phi, 360] };
+  for (const m of marks) { const pt_ = m.at === 'P' ? P : Qp; const [a1, a2] = rng[m.pos]; s += arcLabel(pt_[0], pt_[1], 16, a1, a2, m.t, m.hl); }
+  s += `<text class="tk" x="${W - 60}" y="${(yl + ym) / 2 + 4}">l ∥ m</text>`;
+  return SV(W, 170, s);
+}
+function zigFig(a, b) {
+  const W = 260, yl = 30, ym = 140, x = 186, y = 85;
+  const A = [f1(x - (y - yl) / Math.tan(a * Math.PI / 180)), yl], B = [f1(x - (ym - y) / Math.tan(b * Math.PI / 180)), ym];
+  let s = `<line class="ln" x1="10" y1="${yl}" x2="${W - 20}" y2="${yl}"/><line class="ln" x1="10" y1="${ym}" x2="${W - 20}" y2="${ym}"/>`;
+  s += `<text class="tk" x="${W - 14}" y="${yl + 4}">l</text><text class="tk" x="${W - 14}" y="${ym + 4}">m</text>`;
+  s += `<polyline class="ln" fill="none" points="${A.join(',')} ${f1(x)},${f1(y)} ${B.join(',')}"/>`;
+  s += arcLabel(A[0], A[1], 18, -a, 0, deg(a), false) + arcLabel(B[0], B[1], 18, 0, b, deg(b), false);
+  const angA = Math.atan2(-(A[1] - y), A[0] - x) * 180 / Math.PI, angB = Math.atan2(-(B[1] - y), B[0] - x) * 180 / Math.PI;
+  s += arcLabel(x, y, 16, angA, angB < angA ? angB + 360 : angB, `x`, true);
+  s += `<text class="tk" x="12" y="${yl - 12}">l ∥ m</text>`;
+  return SV(W, 160, s);
+}
+const exh = (a, b) => `(${lin(a, b, 'x')})°`;
+const G_GEO = {
+  g1: [
+    () => { const n = ri(4, 6); const kind = pick([['직선', n * (n - 1) / 2, 'n(n − 1) ÷ 2'], ['선분', n * (n - 1) / 2, 'n(n − 1) ÷ 2'], ['반직선', n * (n - 1), 'n(n − 1)']]);
+      return NQ({ p: `어느 세 점도 한 직선 위에 있지 않은 서로 다른 ${n}개의 점이 있어. 이 중 두 점을 이어 만들 수 있는 서로 다른 <b>${kind[0]}</b>의 개수는?`, ans: qi(kind[1]), unit: '개', hint: '직선과 선분은 AB = BA, 반직선은 AB ≠ BA야 (시작점이 달라!).', steps: [`두 점을 고르는 방법: ${n} × ${n - 1} ÷ 2 = ${n * (n - 1) / 2}`, kind[0] === '반직선' ? `반직선은 방향이 2가지 → ${n * (n - 1)}개` : `${kind[0]}은 순서와 상관없으니 ${kind[1]}개`] }); },
+    () => { const n = ri(3, 5); const names = 'ABCDE'.slice(0, n).split('').join(', '); const kind = pick([['직선', 1], ['선분', n * (n - 1) / 2], ['반직선', 2 * (n - 1)]]);
+      return NQ({ p: `한 직선 위에 있는 서로 다른 ${n}개의 점 ${names}가 있어. 이 중 두 점을 이어 만들 수 있는 서로 다른 <b>${kind[0]}</b>의 개수는?`, ans: qi(kind[1]), unit: '개', hint: '점들이 한 직선 위에 있으면 직선은 모두 같은 직선이야! 반직선은 방향을 잘 봐.', steps: [kind[0] === '직선' ? '모든 점이 한 직선 위 → 직선은 1개' : kind[0] === '선분' ? `두 점을 고르는 방법 ${n} × ${n - 1} ÷ 2 = ${kind[1]}` : `양 끝 점을 뺀 점에서는 방향마다 하나씩, 양 끝 점에서는 안쪽 방향 하나 → ${kind[1]}개`] }); },
+    () => { const n = ri(3, 6); const nm = ['', '', '', '삼', '사', '오', '육'][n]; const ask = pick([['교점', 2 * n], ['교선', 3 * n], ['교점과 교선의 개수의 합', 5 * n]]);
+      return NQ({ p: `${nm}각기둥에서 <b>${ask[0]}</b>${ask[0].length > 3 ? '은' : '의 개수는'}?`, ans: qi(ask[1]), unit: '개', hint: '입체도형에서 교점은 꼭짓점, 교선은 모서리야.', steps: [`${nm}각기둥: 꼭짓점 ${2 * n}개, 모서리 ${3 * n}개`, `답: ${ask[1]}`] }); },
+    () => { const m = ri(2, 8); const AB = 4 * m; const ask = pick([['NB', 3 * m], ['MN', m]]);
+      return NQ({ p: `선분 AB의 중점을 M, 선분 AM의 중점을 N이라 하자. ${M(ov('AB') + ' = ' + AB)} cm일 때, ${M(ov(ask[0]))}의 길이는?`, ans: qi(ask[1]), unit: 'cm', hint: '그림을 그려 봐. 중점은 선분을 반으로 나누는 점이야.', steps: [`${M(ov('AM') + ' = ' + ov('MB') + ' = ' + 2 * m)}, ${M(ov('AN') + ' = ' + ov('NM') + ' = ' + m)}`, `${M(ov(ask[0]) + ' = ' + ask[1])} cm`] }); },
+    () => { const h = ri(1, 11), m = pick([0, 10, 20, 30, 40, 50]); const hh = 30 * h + 0.5 * m, mm = 6 * m; let d = Math.abs(hh - mm); if (d > 180) d = 360 - d;
+      return NQ({ p: `시계가 ${h}시 ${m ? m + '분' : '정각'}을 가리킬 때, 시침과 분침이 이루는 각 중 작은 쪽 각의 크기는?`, ans: qi(d), unit: '°', hint: '분침은 1분에 6°, 시침은 1시간에 30°, 1분에 0.5°씩 움직여.', steps: [`시침: 30° × ${h} + 0.5° × ${m} = ${hh}°`, `분침: 6° × ${m} = ${mm}°`, `차이: ${Math.abs(hh - mm)}° ${Math.abs(hh - mm) > 180 ? `→ 360° ${MI} ${Math.abs(hh - mm)}° = ${d}°` : ''}`] }); },
+  ],
+  g2: [
+    () => { let x0, th, a, b, c, d; do { x0 = ri(10, 40); th = ri(40, 140); a = ri(1, 4); c = ri(1, 4); b = th - a * x0; d = th - c * x0; } while (a === c || th === 90 || Math.abs(b) > 70 || Math.abs(d) > 70 || b === 0 || d === 0);
+      const phi = ri(-15, 20);
+      return NQ({ p: '그림에서 두 직선이 한 점에서 만날 때, x의 값은?', fig: crossFig(phi, th, { 0: { t: exh(a, b) }, 2: { t: exh(c, d), hl: 1 } }), pre: M(X + ' ='), ans: qi(x0), hint: '마주 보는 두 각(맞꼭지각)은 크기가 같아.', steps: [`맞꼭지각: ${M(lin(a, b) + ' = ' + lin(c, d))}`, `${M(lin(a - c, 0) + ' = ' + N(d - b))} → ${M(X + ' = ' + x0)}`] }); },
+    () => { let x0, p, q, K, r, e3; do { x0 = ri(12, 35); p = ri(1, 3); q = ri(1, 3); K = ri(25, 70); r = 180 - (p + q) * x0 - K; e3 = q * x0 + r; } while (e3 < 25 || p * x0 < 20 || Math.abs(r) > 80);
+      const cx = 120, cy = 110; const a1 = p * x0, a2 = a1 + K;
+      let s = `<line class="ln" x1="10" y1="${cy}" x2="230" y2="${cy}"/>` + ray(cx, cy, 95, a1) + ray(cx, cy, 95, a2);
+      s += arcLabel(cx, cy, 22, 0, a1, (p === 1 ? '' : p) + 'x°', true) + arcLabel(cx, cy, 30, a1, a2, deg(K)) + arcLabel(cx, cy, 22, a2, 180, exh(q, r)) + `<circle class="dot" cx="${cx}" cy="${cy}" r="2.5"/>`;
+      return NQ({ p: '그림에서 x의 값은? (아래쪽 선은 직선이야)', fig: SV(240, 125, s), pre: M(X + ' ='), ans: qi(x0), hint: '한 직선 위의 각을 모두 더하면 180°(평각)야.', steps: [`${M((p === 1 ? '' : p) + X + ' + ' + K + ' + (' + lin(q, r) + ') = 180')}`, `${M(lin(p + q, K + r) + ' = 180')} → ${M(X + ' = ' + x0)}`] }); },
+    () => { const a = ri(35, 145); if (a === 90) return G_GEO.g2[2](); const phi = ri(-10, 20);
+      return NQ({ p: '그림에서 두 직선이 한 점에서 만날 때, x의 값은?', fig: crossFig(phi, a, { 0: { t: deg(a) }, 1: { t: 'x°', hl: 1 } }), pre: M(X + ' ='), ans: qi(180 - a), hint: '이웃한 두 각은 한 직선 위에 있으니까 합이 180°야.', steps: [`${M(X + ' + ' + a + ' = 180')} → ${M(X + ' = ' + (180 - a))}`] }); },
+  ],
+  g3: [
+    () => { const phi = pick([ri(35, 75), ri(105, 145)]); const POS = ['UR', 'UL', 'LL', 'LR']; const p1 = pick(POS), p2 = pick(POS); const val = p => (p === 'UR' || p === 'LL') ? phi : 180 - phi; const g = val(p1), x = val(p2);
+      const nm = { UR: '오른쪽 위', UL: '왼쪽 위', LL: '왼쪽 아래', LR: '오른쪽 아래' };
+      const vert = { UR: 'LL', LL: 'UR', UL: 'LR', LR: 'UL' };
+      const alt = (p1 === 'LR' && p2 === 'UL') || (p1 === 'LL' && p2 === 'UR');
+      const steps = [`${M('l ∥ m')}이니까 동위각의 크기가 같아. 아래 교점의 ${nm[p1]} 각도 ${g}°야.`];
+      if (p2 === p1) steps.push(`x는 바로 그 동위각 → ${M(X + ' = ' + g)}`);
+      else if (vert[p1] === p2) steps.push(`x는 그 각의 맞꼭지각 → ${M(X + ' = ' + g)}${alt ? ' (엇각으로 봐도 같아!)' : ''}`);
+      else steps.push(`x와 그 각은 이웃한 각이라 합이 180° → ${M(X + ' = 180 ' + MI + ' ' + g + ' = ' + x)}`);
+      return NQ({ p: '그림에서 l ∥ m일 때, x의 값은?', fig: parallelFig(phi, [{ at: 'P', pos: p1, t: deg(g) }, { at: 'Q', pos: p2, t: 'x°', hl: 1 }]), pre: M(X + ' ='), ans: qi(x), hint: '평행선에서는 동위각과 엇각의 크기가 같아.', steps }); },
+    () => { let phi, x0, a, b, c, d, p1, p2, eq;
+      const POS = ['UR', 'UL', 'LL', 'LR']; const val = p => (p === 'UR' || p === 'LL') ? phi : 180 - phi;
+      do { phi = pick([ri(35, 75), ri(105, 145)]); p1 = pick(POS); p2 = pick(POS); x0 = ri(10, 35); a = ri(1, 3); c = ri(1, 4); b = val(p1) - a * x0; d = val(p2) - c * x0; eq = val(p1) === val(p2); } while (Math.abs(b) > 70 || Math.abs(d) > 70 || b === 0 || d === 0 || (eq && a === c) || (val(p1) === val(p2) && phi === 90));
+      const steps = eq ? [`두 각은 크기가 같은 위치야 (동위각·엇각·맞꼭지각).`, `${M(lin(a, b) + ' = ' + lin(c, d))} → ${M(X + ' = ' + x0)}`] : [`두 각의 합은 180°야 (동위각으로 옮기면 이웃한 각).`, `${M('(' + lin(a, b) + ') + (' + lin(c, d) + ') = 180')} → ${M(X + ' = ' + x0)}`];
+      return NQ({ p: '그림에서 l ∥ m일 때, x의 값은?', fig: parallelFig(phi, [{ at: 'P', pos: p1, t: exh(a, b) }, { at: 'Q', pos: p2, t: exh(c, d), hl: 1 }]), pre: M(X + ' ='), ans: qi(x0), hint: '두 각이 같은 크기인지, 더해서 180°인지 먼저 판단해.', steps }); },
+    () => { const a = ri(25, 65), b = ri(25, 65);
+      return NQ({ p: '그림에서 l ∥ m일 때, x의 값은?', fig: zigFig(a, b), pre: M(X + ' ='), ans: qi(a + b), hint: '꺾인 점을 지나고 l, m에 평행한 직선을 그어 봐. 엇각이 두 개 생겨!', steps: [`꺾인 점을 지나는 평행선을 그으면 엇각으로 ${a}°와 ${b}°가 생겨.`, `${M(X + ' = ' + a + ' + ' + b + ' = ' + (a + b))}`] }); },
+  ],
+  g4: [
+    () => { const C = pick([
+        [`${ov('AB')} = ${ov('DE')}, ${ov('BC')} = ${ov('EF')}, ${ov('CA')} = ${ov('FD')}`, 'SSS 합동', '세 쌍의 대응변의 길이가 같아.'],
+        [`${ov('AB')} = ${ov('DE')}, ${ov('BC')} = ${ov('EF')}, ∠B = ∠E`, 'SAS 합동', '두 쌍의 대응변과 그 끼인각이 같아.'],
+        [`${ov('BC')} = ${ov('EF')}, ∠B = ∠E, ∠C = ∠F`, 'ASA 합동', '한 쌍의 대응변과 양 끝 각이 같아.'],
+        [`${ov('AB')} = ${ov('DE')}, ∠A = ∠D, ∠C = ∠F`, 'ASA 합동', '두 각이 같으면 나머지 한 각도 같아(∠B = ∠E) → 변 AB와 양 끝 각.'],
+        [`${ov('AB')} = ${ov('DE')}, ${ov('BC')} = ${ov('EF')}, ∠A = ∠D`, '합동이라고 할 수 없다', '∠A는 두 변 AB, BC의 끼인각이 아니야.'],
+        ['∠A = ∠D, ∠B = ∠E, ∠C = ∠F', '합동이라고 할 수 없다', '세 각만 같으면 크기가 다른 삼각형도 가능해.'],
+      ]);
+      const ALL = ['SSS 합동', 'SAS 합동', 'ASA 합동', '합동이라고 할 수 없다'];
+      return CQ({ p: `△ABC와 △DEF에서 ${M(C[0])}일 때, 두 삼각형의 관계는?`, ok: C[1], no: ALL.filter(z => z !== C[1]), order: ALL, hint: 'SAS는 "끼인각", ASA는 "양 끝 각"이 핵심이야.', steps: [C[2], `→ ${C[1]}`] }); },
+    () => { const okT = () => { let a, b, c; do { a = ri(2, 9); b = ri(2, 9); c = ri(2, 12); } while (!(Math.max(a, b, c) < a + b + c - Math.max(a, b, c))); return [a, b, c]; };
+      const noT = () => { let a, b, c; do { a = ri(2, 9); b = ri(2, 9); c = ri(2, 15); } while (Math.max(a, b, c) < a + b + c - Math.max(a, b, c)); return [a, b, c]; };
+      const wantOk = Math.random() < 0.5; const s = t => t.join(' cm, ') + ' cm';
+      const ok = wantOk ? okT() : noT(); const no = []; const seen = new Set([s(ok)]); while (no.length < 3) { const t = wantOk ? noT() : okT(); if (!seen.has(s(t))) { seen.add(s(t)); no.push(t); } }
+      const chk = t => { const m = Math.max(...t), r = t.reduce((x, y) => x + y) - m; return `${s(t)} → 가장 긴 변 ${m} ${m < r ? '&lt;' : '≥'} 나머지 합 ${r} ${m < r ? '(가능)' : '(불가능)'}`; };
+      return CQ({ p: `세 변의 길이가 다음과 같을 때, 삼각형을 만들 수 ${wantOk ? '<b>있는</b>' : '<b>없는</b>'} 것은?`, ok: s(ok), no: no.map(s), hint: '가장 긴 변의 길이가 나머지 두 변의 길이의 합보다 작아야 삼각형이 돼.', steps: [ok, ...no].map(chk) }); },
+    () => { let a, b; do { a = ri(2, 8); b = ri(a + 1, 12); } while (false); const lo = b - a + 1, hi = a + b - 1;
+      return NQ({ p: `세 변의 길이가 ${a} cm, ${b} cm, ${M(X)} cm인 삼각형이 있어. ${M(X)}가 될 수 있는 자연수는 모두 몇 개일까?`, ans: qi(hi - lo + 1), unit: '개', hint: '(두 변의 차) < x < (두 변의 합)이야.', steps: [`${b} ${MI} ${a} &lt; ${M(X)} &lt; ${b} + ${a} → ${b - a} &lt; ${M(X)} &lt; ${a + b}`, `${M(X)} = ${lo}, …, ${hi} → ${hi - lo + 1}개`] }); },
+  ],
+};
+
+/* ───────── 7. 평면도형 ───────── */
+const NAMES = { 3: '삼', 4: '사', 5: '오', 6: '육', 7: '칠', 8: '팔', 9: '구', 10: '십', 11: '십일', 12: '십이', 15: '십오', 18: '십팔', 20: '이십' };
+const ngon = n => (NAMES[n] || n) + '각형';
+function sectorFig(r, th) {
+  const big = th > 180, cx = 110, cy = big ? 95 : 105, R = 80; const a1 = big ? 90 - th / 2 : 0, a2 = a1 + th;
+  const [x1, y1] = P2(cx, cy, R, a1), [x2, y2] = P2(cx, cy, R, a2);
+  let s = `<path class="sec" d="M${cx} ${cy} L${f1(x1)} ${f1(y1)} A${R} ${R} 0 ${th > 180 ? 1 : 0} 0 ${f1(x2)} ${f1(y2)} Z"/>`;
+  s += arcLabel(cx, cy, 16, a1, a2, deg(th), true);
+  const [mx, my] = P2(cx, cy, R / 2, a1); s += `<text class="lb" x="${f1(mx)}" y="${f1(my + 14)}" text-anchor="middle">${r} cm</text>`;
+  s += `<circle class="dot" cx="${cx}" cy="${cy}" r="2.5"/><text class="tk" x="${cx - 14}" y="${cy + 14}">O</text>`;
+  return SV(230, big ? 185 : 130, s);
+}
+function triExtFig(A, B, labels) { // A, B: 내각(도). C에서 외각
+  const C = 180 - A - B; const tb = Math.tan(B * Math.PI / 180), tc = Math.tan(C * Math.PI / 180);
+  const ux = tc / (tb + tc), uh = ux * tb; const sc = Math.min(140, 105 / uh);
+  const Bp = [30, 135], Cp = [30 + f1(sc), 135];
+  const x = Bp[0] + ux * sc, y = Bp[1] - uh * sc;
+  let s = `<polygon class="tri" points="${Bp.join(',')} ${Cp.join(',')} ${f1(x)},${f1(y)}"/><line class="ln" x1="${Cp[0]}" y1="${Cp[1]}" x2="${Cp[0] + 70}" y2="${Cp[1]}"/>`;
+  s += `<text class="tk" x="${f1(x) - 4}" y="${f1(y) - 8}">A</text><text class="tk" x="${Bp[0] - 14}" y="${Bp[1] + 14}">B</text><text class="tk" x="${Cp[0] - 4}" y="${Cp[1] + 16}">C</text><text class="tk" x="${Cp[0] + 64}" y="${Cp[1] + 16}">D</text>`;
+  const angAB = Math.atan2(-(Bp[1] - y), Bp[0] - x) * 180 / Math.PI, angAC = Math.atan2(-(Cp[1] - y), Cp[0] - x) * 180 / Math.PI;
+  if (labels.A) s += arcLabel(x, y, 16, Math.min(angAB, angAC) + 360, Math.max(angAB, angAC) + 360, labels.A.t, labels.A.hl);
+  if (labels.B) s += arcLabel(Bp[0], Bp[1], 18, 0, B, labels.B.t, labels.B.hl);
+  if (labels.D) s += arcLabel(Cp[0], Cp[1], 18, 0, 180 - C, labels.D.t, labels.D.hl);
+  return SV(250, 160, s);
+}
+const G_POLY = {
+  y1: [
+    () => { const n = ri(5, 12); return NQ({ p: `${ngon(n)}의 대각선의 개수는?`, ans: qi(n * (n - 3) / 2), unit: '개', hint: 'n각형의 대각선 개수 = n(n − 3) ÷ 2', steps: [`${n} × (${n} ${MI} 3) ÷ 2 = ${n * (n - 3) / 2}`] }); },
+    () => { const n = ri(5, 12); const k = n * (n - 3) / 2; return NQ({ p: `대각선의 개수가 ${k}개인 다각형은 몇 각형일까?`, ans: qi(n), unit: '각형', hint: 'n(n − 3) ÷ 2 = k가 되는 n을 찾아. n과 n − 3은 3 차이 나는 두 수야.', steps: [`${M(v('n') + '(' + v('n') + ' ' + MI + ' 3) = ' + 2 * k)}`, `${n} × ${n - 3} = ${2 * k} → ${ngon(n)}`] }); },
+    () => { const n = ri(5, 12); return NQ({ p: `${ngon(n)}의 한 꼭짓점에서 그을 수 있는 대각선의 개수를 ${M(A_)}, 이 대각선들로 나누어지는 삼각형의 개수를 ${M(B_)}라 할 때, ${M(A_ + ' + ' + B_)}의 값은?`, ans: qi(2 * n - 5), hint: '자기 자신과 이웃한 두 꼭짓점에는 대각선을 그을 수 없어.', steps: [`${M(A_ + ' = ' + n + ' ' + MI + ' 3 = ' + (n - 3))}`, `${M(B_ + ' = ' + n + ' ' + MI + ' 2 = ' + (n - 2))}`, `${M(A_ + ' + ' + B_ + ' = ' + (2 * n - 5))}`] }); },
+    () => { const k = ri(2, 9); const n = k + 3; return NQ({ p: `한 꼭짓점에서 그을 수 있는 대각선이 ${k}개인 다각형의 대각선의 총 개수는?`, ans: qi(n * (n - 3) / 2), unit: '개', hint: 'n − 3 = k니까 먼저 몇 각형인지 구해.', steps: [`${M(v('n') + ' ' + MI + ' 3 = ' + k)} → ${ngon(n)}`, `${n} × ${n - 3} ÷ 2 = ${n * (n - 3) / 2}`] }); },
+  ],
+  y2: [
+    () => { const n = ri(5, 12); return NQ({ p: `${ngon(n)}의 내각의 크기의 합은?`, ans: qi(180 * (n - 2)), unit: '°', hint: 'n각형은 한 꼭짓점에서 대각선을 그으면 삼각형 (n − 2)개로 나뉘어.', steps: [`180° × (${n} ${MI} 2) = ${180 * (n - 2)}°`] }); },
+    () => { const n = pick([5, 6, 8, 9, 10, 12, 15, 18, 20]); return NQ({ p: `정${ngon(n)}의 한 내각의 크기는?`, ans: qi(180 * (n - 2) / n), unit: '°', hint: '(내각의 합) ÷ (꼭짓점 수) 또는 180° − (한 외각)', steps: [`한 외각: 360° ÷ ${n} = ${360 / n}°`, `한 내각: 180° ${MI} ${360 / n}° = ${180 * (n - 2) / n}°`] }); },
+    () => { const n = pick([5, 6, 8, 9, 10, 12, 15, 18, 20]); const ask = Math.random() < 0.5;
+      return ask ? NQ({ p: `정${ngon(n)}의 한 외각의 크기는?`, ans: qi(360 / n), unit: '°', hint: '다각형의 외각의 크기의 합은 항상 360°야.', steps: [`360° ÷ ${n} = ${360 / n}°`] })
+        : NQ({ p: `한 외각의 크기가 ${360 / n}°인 정다각형은 정몇각형일까?`, pre: '정', ans: qi(n), unit: '각형', hint: '외각의 합 360°를 한 외각으로 나누면 꼭짓점 수가 나와.', steps: [`360 ÷ ${360 / n} = ${n} → 정${ngon(n)}`] }); },
+    () => { const n = ri(5, 12); return NQ({ p: `내각의 크기의 합이 ${180 * (n - 2)}°인 다각형의 꼭짓점의 개수는?`, ans: qi(n), unit: '개', hint: '180° × (n − 2) = 합으로 식을 세워.', steps: [`${M('180 × (' + v('n') + ' ' + MI + ' 2) = ' + 180 * (n - 2))}`, `${M(v('n') + ' ' + MI + ' 2 = ' + (n - 2))} → ${M(v('n') + ' = ' + n)}`] }); },
+    () => { let xs, x; do { xs = [ri(90, 130), ri(90, 130), ri(90, 130), ri(90, 130)]; x = 540 - xs.reduce((a, b) => a + b); } while (x < 70 || x > 150);
+      return NQ({ p: `오각형의 다섯 내각 중 네 각의 크기가 ${xs.join('°, ')}°일 때, 나머지 한 각의 크기는?`, ans: qi(x), unit: '°', hint: '오각형의 내각의 합은 180° × 3이야.', steps: [`오각형 내각의 합: 540°`, `540° ${MI} (${xs.join(' + ')})° = ${x}°`] }); },
+  ],
+  y3: [
+    () => { const r = pick([[1, 2, 3], [2, 3, 4], [1, 1, 2], [3, 4, 5], [1, 3, 5], [2, 3, 5], [1, 2, 2], [4, 5, 6], [1, 4, 7], [5, 6, 7], [2, 2, 5]]); const s = r[0] + r[1] + r[2]; const big = Math.random() < 0.6;
+      const ans = 180 * (big ? r[2] : r[0]) / s;
+      return NQ({ p: `삼각형의 세 내각의 크기의 비가 ${r.join(' : ')}일 때, 가장 ${big ? '큰' : '작은'} 각의 크기는?`, ans: qi(ans), unit: '°', hint: '세 내각의 합 180°를 비율대로 나누어.', steps: [`180° × ${fr(big ? r[2] : r[0], s)} = ${ans}°`] }); },
+    () => { let A, B; do { A = ri(35, 85); B = ri(30, 75); } while (A + B > 150 || A + B < 95); const t = pick(['ext', 'A']);
+      return t === 'ext' ? NQ({ p: '그림에서 x의 값은?', fig: triExtFig(A, B, { A: { t: deg(A) }, B: { t: deg(B) }, D: { t: 'x°', hl: 1 } }), pre: M(X + ' ='), ans: qi(A + B), hint: '삼각형의 한 외각의 크기는 그와 이웃하지 않는 두 내각의 합과 같아.', steps: [`${M(X + ' = ' + A + ' + ' + B + ' = ' + (A + B))}`] })
+        : NQ({ p: '그림에서 x의 값은?', fig: triExtFig(A, B, { A: { t: 'x°', hl: 1 }, B: { t: deg(B) }, D: { t: deg(A + B) } }), pre: M(X + ' ='), ans: qi(A), hint: '외각 = 이웃하지 않는 두 내각의 합이야.', steps: [`${M(A + B + ' = ' + X + ' + ' + B)} → ${M(X + ' = ' + A)}`] }); },
+    () => { let x0, a, b, c, d; do { x0 = ri(15, 45); a = ri(1, 3); b = ri(-20, 30); c = ri(1, 2); d = 180 - x0 - (a * x0 + b) - c * x0; } while (a * x0 + b < 15 || c * x0 + d < 15 || Math.abs(d) > 60);
+      return NQ({ p: `삼각형의 세 내각의 크기가 ${M(X + '°, ' + exh(a, b) + ', ' + exh(c, d))}일 때, ${M(X)}의 값은?`, ans: qi(x0), hint: '세 내각을 모두 더하면 180°야.', steps: [`${M(X + ' + (' + lin(a, b) + ') + (' + lin(c, d) + ') = 180')}`, `${M(lin(1 + a + c, b + d) + ' = 180')} → ${M(X + ' = ' + x0)}`] }); },
+  ],
+  y4: [
+    () => { let r, th, k; do { r = pick([2, 3, 4, 5, 6, 8, 9, 10, 12]); th = pick([30, 45, 60, 72, 90, 120, 135, 150, 240, 270]); k = Q(2 * r * th, 360); } while (k.d !== 1);
+      return NQ({ p: `반지름의 길이가 ${r} cm이고 중심각의 크기가 ${th}°인 부채꼴의 <b>호의 길이</b>는?`, fig: sectorFig(r, th), ans: k, unit: 'π cm', hint: '호의 길이 = 2πr × (중심각 ÷ 360°)', steps: [`2π × ${r} × ${fr(th, 360)} = ${qh(k)}π (cm)`] }); },
+    () => { let r, th, k; do { r = pick([2, 3, 4, 5, 6, 8, 9, 10, 12]); th = pick([30, 45, 60, 72, 90, 120, 135, 150, 240, 270]); k = Q(r * r * th, 360); } while (k.d !== 1);
+      return NQ({ p: `반지름의 길이가 ${r} cm이고 중심각의 크기가 ${th}°인 부채꼴의 <b>넓이</b>는?`, fig: sectorFig(r, th), ans: k, unit: 'π cm²', hint: '부채꼴의 넓이 = πr² × (중심각 ÷ 360°)', steps: [`π × ${r}${sup(2)} × ${fr(th, 360)} = ${qh(k)}π (cm²)`] }); },
+    () => { let r, l; do { r = ri(2, 12); l = ri(1, 10); } while ((r * l) % 2);
+      return NQ({ p: `반지름의 길이가 ${r} cm이고 호의 길이가 ${l === 1 ? '' : l}π cm인 부채꼴의 넓이는?`, ans: qi(r * l / 2), unit: 'π cm²', hint: '부채꼴의 넓이 = ½ × 반지름 × 호의 길이', steps: [`${fr(1, 2)} × ${r} × ${l === 1 ? '' : l}π = ${r * l / 2}π (cm²)`] }); },
+    () => { const a = pick([20, 30, 40, 45, 60]); let b; do { b = a * ri(2, 5); } while (b >= 360); const l = ri(2, 9); const isArc = Math.random() < 0.5;
+      return NQ({ p: `한 원에서 중심각의 크기가 ${a}°인 부채꼴의 ${isArc ? '호의 길이' : '넓이'}가 ${l} ${isArc ? 'cm' : 'cm²'}일 때, 중심각의 크기가 ${b}°인 부채꼴의 ${isArc ? '호의 길이' : '넓이'}는?`, ans: qi(l * b / a), unit: isArc ? 'cm' : 'cm²', hint: '한 원에서 부채꼴의 호의 길이와 넓이는 중심각의 크기에 정비례해.', steps: [`중심각이 ${b / a}배 → ${isArc ? '호의 길이' : '넓이'}도 ${b / a}배`, `${l} × ${b / a} = ${l * b / a}`] }); },
+    () => { let r, th; do { r = pick([3, 4, 5, 6, 8, 9, 10, 12]); th = pick([30, 40, 45, 60, 72, 90, 120, 150]); } while ((2 * r * th) % 360);
+      const l = 2 * r * th / 360;
+      return NQ({ p: `반지름의 길이가 ${r} cm이고 호의 길이가 ${l === 1 ? '' : l}π cm인 부채꼴의 중심각의 크기는?`, ans: qi(th), unit: '°', hint: '호의 길이 공식에 대입해서 중심각을 x°로 놓고 풀어 봐.', steps: [`${M('2π × ' + r + ' × ' + fr(X, 360) + ' = ' + (l === 1 ? '' : l) + 'π')}`, `${M(X + ' = ' + th)}`] }); },
+  ],
+};
+
+/* ───────── 8. 입체도형 ───────── */
+const SOLIDS = { 정사면체: ['정삼각형', 3, 4, 6, 4], 정육면체: ['정사각형', 3, 6, 12, 8], 정팔면체: ['정삼각형', 4, 8, 12, 6], 정십이면체: ['정오각형', 3, 12, 30, 20], 정이십면체: ['정삼각형', 5, 20, 30, 12] };
+function revFig(kind) {
+  const ax = 70; let s = `<line class="axis" x1="${ax}" y1="10" x2="${ax}" y2="150"/><text class="tk" x="${ax - 6}" y="14" text-anchor="end">l</text>`;
+  if (kind === 'rect') s += `<rect class="sec" x="${ax}" y="35" width="70" height="90"/>`;
+  if (kind === 'tri') s += `<polygon class="sec" points="${ax},30 ${ax},125 ${ax + 80},125"/>`;
+  if (kind === 'semi') s += `<path class="sec" d="M${ax} 30 A50 50 0 0 1 ${ax} 130 Z"/>`;
+  if (kind === 'trap') s += `<polygon class="sec" points="${ax},35 ${ax + 40},35 ${ax + 85},125 ${ax},125"/>`;
+  return SV(200, 160, s);
+}
+const G_SOLID = {
+  s1: [
+    () => { const n = ri(3, 8); const nm = NAMES[n]; const kind = pick([['각기둥', n + 2, 3 * n, 2 * n], ['각뿔', n + 1, 2 * n, n + 1], ['각뿔대', n + 2, 3 * n, 2 * n]]); const ask = pick([['면', 1], ['모서리', 2], ['꼭짓점', 3]]);
+      return NQ({ p: `${nm}${kind[0]}의 <b>${ask[0]}</b>의 개수는?`, ans: qi(kind[ask[1]]), unit: '개', hint: 'n각기둥(면 n+2, 모서리 3n, 꼭짓점 2n), n각뿔(n+1, 2n, n+1), n각뿔대(n+2, 3n, 2n)', steps: [`${nm}${kind[0]}: 면 ${kind[1]}개, 모서리 ${kind[2]}개, 꼭짓점 ${kind[3]}개`] }); },
+    () => { const n = ri(3, 9); const t = pick([
+        [`모서리의 개수가 ${2 * n}개인 각뿔의 면의 개수는?`, n + 1, `각뿔의 모서리 2n = ${2 * n} → n = ${n}`, `면: ${n} + 1 = ${n + 1}`],
+        [`꼭짓점의 개수가 ${2 * n}개인 각기둥의 모서리의 개수는?`, 3 * n, `각기둥의 꼭짓점 2n = ${2 * n} → n = ${n}`, `모서리: 3 × ${n} = ${3 * n}`],
+        [`면의 개수가 ${n + 2}개인 각뿔대의 모서리의 개수는?`, 3 * n, `각뿔대의 면 n + 2 = ${n + 2} → n = ${n}`, `모서리: 3 × ${n} = ${3 * n}`],
+      ]);
+      return NQ({ p: t[0], ans: qi(t[1]), unit: '개', hint: '먼저 밑면이 몇 각형인지(n) 구해.', steps: [t[2], t[3]] }); },
+    () => { const no = sample(['삼각뿔', '사각기둥', '오각뿔대', '정육면체', '육각뿔', '삼각기둥'], 3); const ok = pick(['원기둥', '원뿔', '구', '원뿔대']);
+      return CQ({ p: '다음 중 다면체가 <b>아닌</b> 것은?', ok, no, hint: '다면체는 다각형인 면으로만 둘러싸인 입체도형이야. 곡면이 있으면 아니야!', steps: [`${ok} → 곡면이 있어서 다면체가 아니야 (회전체).`] }); },
+    () => { const t = pick([['사다리꼴', '각뿔대'], ['삼각형', '각뿔'], ['직사각형', '각기둥']]); const ALL = ['각기둥', '각뿔', '각뿔대', '정다면체'];
+      return CQ({ p: `옆면의 모양이 <b>${t[0]}</b>인 입체도형은?`, ok: t[1], no: ALL.filter(z => z !== t[1]), hint: '각기둥 → 직사각형, 각뿔 → 삼각형, 각뿔대 → 사다리꼴', steps: [`옆면이 ${t[0]} → ${t[1]}`] }); },
+  ],
+  s2: [
+    () => { const t = pick([['정삼각형', 3, '정사면체'], ['정삼각형', 4, '정팔면체'], ['정삼각형', 5, '정이십면체'], ['정사각형', 3, '정육면체'], ['정오각형', 3, '정십이면체']]);
+      return CQ({ p: `면의 모양이 ${t[0]}이고, 한 꼭짓점에 모인 면의 개수가 ${t[1]}개인 정다면체는?`, ok: t[2], no: Object.keys(SOLIDS).filter(z => z !== t[2]), hint: '정삼각형 면: 3개씩(정사면체), 4개씩(정팔면체), 5개씩(정이십면체)', steps: [`→ ${t[2]}`] }); },
+    () => { const nm = pick(Object.keys(SOLIDS)); const ask = pick([['면', 2], ['모서리', 3], ['꼭짓점', 4]]);
+      return NQ({ p: `${nm}의 <b>${ask[0]}</b>의 개수는?`, ans: qi(SOLIDS[nm][ask[1]]), unit: '개', hint: '모서리 = (면의 수 × 한 면의 변의 수) ÷ 2', steps: [`${nm}: 면 ${SOLIDS[nm][2]}, 모서리 ${SOLIDS[nm][3]}, 꼭짓점 ${SOLIDS[nm][4]}`] }); },
+    () => { const T = ['정다면체는 5가지뿐이다.', '면의 모양이 정삼각형인 정다면체는 3가지이다.', '정십이면체의 면의 모양은 정오각형이다.', '정육면체와 정팔면체의 모서리의 개수는 같다.', '정사면체의 꼭짓점과 면의 개수는 같다.'];
+      const F = [['정이십면체의 꼭짓점의 개수는 20개이다.', '정이십면체의 꼭짓점은 12개야.'], ['면의 모양이 정육각형인 정다면체가 있다.', '정육각형 3개를 모으면 360°라서 입체가 안 돼.'], ['정팔면체의 한 꼭짓점에 모인 면은 3개이다.', '정팔면체는 4개야.'], ['정사면체의 모서리의 개수는 4개이다.', '정사면체의 모서리는 6개야.']];
+      const ok = pick(F);
+      return CQ({ p: '정다면체에 대한 설명으로 옳지 <b>않은</b> 것은?', ok: ok[0], no: sample(T, 3), hint: '정다면체 5가지의 면 모양, 면·모서리·꼭짓점 수를 떠올려 봐.', steps: [ok[1]] }); },
+    () => { const [p, q] = sample(Object.keys(SOLIDS), 2); const k = pick([['꼭짓점', 4], ['면', 2]]); const a = SOLIDS[p][k[1]], b = SOLIDS[q][k[1]];
+      return NQ({ p: `${p}의 ${k[0]}의 개수를 ${M(A_)}, ${q}의 ${k[0]}의 개수를 ${M(B_)}라 할 때, ${M(A_ + ' + ' + B_)}의 값은?`, ans: qi(a + b), hint: '정다면체 표를 떠올려 봐.', steps: [`${M(A_ + ' = ' + a + ', ' + B_ + ' = ' + b)} → ${a + b}`] }); },
+  ],
+  s3: [
+    () => { const t = pick([['rect', '직사각형', '원기둥'], ['tri', '직각삼각형', '원뿔'], ['semi', '반원', '구'], ['trap', '사다리꼴', '원뿔대']]);
+      return CQ({ p: `그림의 ${t[1]}을 직선 l을 축으로 하여 1회전 시킬 때 생기는 입체도형은?`, fig: revFig(t[0]), ok: t[2], no: ['원기둥', '원뿔', '구', '원뿔대'].filter(z => z !== t[2]), order: ['원기둥', '원뿔', '구', '원뿔대'], hint: '축을 중심으로 돌리는 모습을 머릿속에 그려 봐.', steps: [`${t[1]} → ${t[2]}`] }); },
+    () => { const t = pick([['원기둥을', '직사각형'], ['원뿔을', '이등변삼각형'], ['구를', '원'], ['원뿔대를', '사다리꼴']]);
+      return CQ({ p: `${t[0]} 회전축을 포함하는 평면으로 자를 때 생기는 단면의 모양은?`, ok: t[1], no: ['직사각형', '이등변삼각형', '원', '사다리꼴', '정사각형'].filter(z => z !== t[1]), hint: '회전축을 포함하는 평면으로 자른 단면은 회전시킨 도형을 축 대칭으로 펼친 모양이야.', steps: [`${t[0].slice(0, -1)} → ${t[1]}`, '참고: 회전축에 수직인 평면으로 자르면 단면은 항상 원이야.'] }); },
+    () => { const ok = pick(['삼각뿔', '정육면체', '사각기둥', '오각뿔대']);
+      return CQ({ p: '다음 중 회전체가 <b>아닌</b> 것은?', ok, no: ['원기둥', '원뿔', '구', '원뿔대'], hint: '회전체는 평면도형을 한 직선을 축으로 1회전 시켜 만든 입체도형이야.', steps: [`${ok} → 다각형 면으로 둘러싸인 다면체`] }); },
+  ],
+  s4: [
+    () => { const a = ri(2, 9), b = ri(2, 9), c = ri(2, 9); const ask = Math.random() < 0.5;
+      return ask ? NQ({ p: `가로 ${a} cm, 세로 ${b} cm, 높이 ${c} cm인 직육면체의 <b>부피</b>는?`, ans: qi(a * b * c), unit: 'cm³', hint: '부피 = 밑넓이 × 높이', steps: [`${a} × ${b} × ${c} = ${a * b * c}`] })
+        : NQ({ p: `가로 ${a} cm, 세로 ${b} cm, 높이 ${c} cm인 직육면체의 <b>겉넓이</b>는?`, ans: qi(2 * (a * b + b * c + c * a)), unit: 'cm²', hint: '겉넓이 = 밑넓이 × 2 + 옆넓이', steps: [`밑넓이 × 2 = ${a * b} × 2 = ${2 * a * b}`, `옆넓이 = (${a} + ${b} + ${a} + ${b}) × ${c} = ${2 * (a + b) * c}`, `합: ${2 * (a * b + b * c + c * a)}`] }); },
+    () => { const r = ri(2, 6), h = ri(3, 10); const ask = Math.random() < 0.5;
+      return ask ? NQ({ p: `밑면의 반지름의 길이가 ${r} cm, 높이가 ${h} cm인 원기둥의 <b>부피</b>는?`, ans: qi(r * r * h), unit: 'π cm³', hint: '원기둥의 부피 = πr² × 높이', steps: [`π × ${r}${sup(2)} × ${h} = ${r * r * h}π`] })
+        : NQ({ p: `밑면의 반지름의 길이가 ${r} cm, 높이가 ${h} cm인 원기둥의 <b>겉넓이</b>는?`, ans: qi(2 * r * r + 2 * r * h), unit: 'π cm²', hint: '겉넓이 = 밑넓이 × 2 + 옆넓이(직사각형: 밑면 둘레 × 높이)', steps: [`밑넓이 × 2 = ${r * r}π × 2 = ${2 * r * r}π`, `옆넓이 = 2π × ${r} × ${h} = ${2 * r * h}π`, `합: ${2 * r * r + 2 * r * h}π`] }); },
+    () => { const [p, q, c] = pick([[3, 4, 5], [6, 8, 10], [5, 12, 13]]); const h = ri(3, 10); const base = p * q / 2; const ask = Math.random() < 0.5;
+      const pre = `밑면이 세 변의 길이가 ${p} cm, ${q} cm, ${c} cm인 직각삼각형(직각을 낀 두 변이 ${p} cm, ${q} cm)이고 높이가 ${h} cm인 삼각기둥의`;
+      return ask ? NQ({ p: `${pre} <b>부피</b>는?`, ans: qi(base * h), unit: 'cm³', hint: '밑넓이(직각삼각형) × 높이', steps: [`밑넓이 = ${fr(1, 2)} × ${p} × ${q} = ${base}`, `${base} × ${h} = ${base * h}`] })
+        : NQ({ p: `${pre} <b>겉넓이</b>는?`, ans: qi(2 * base + (p + q + c) * h), unit: 'cm²', hint: '밑넓이 × 2 + (밑면의 둘레 × 높이)', steps: [`밑넓이 × 2 = ${base} × 2 = ${2 * base}`, `옆넓이 = (${p} + ${q} + ${c}) × ${h} = ${(p + q + c) * h}`, `합: ${2 * base + (p + q + c) * h}`] }); },
+  ],
+  s5: [
+    () => { let r, h; do { r = ri(2, 6); h = ri(3, 12); } while ((r * r * h) % 3); return NQ({ p: `밑면의 반지름의 길이가 ${r} cm, 높이가 ${h} cm인 원뿔의 부피는?`, ans: qi(r * r * h / 3), unit: 'π cm³', hint: '뿔의 부피 = ⅓ × 밑넓이 × 높이', steps: [`${fr(1, 3)} × π × ${r}${sup(2)} × ${h} = ${r * r * h / 3}π`] }); },
+    () => { let a, h; do { a = ri(2, 9); h = ri(3, 12); } while ((a * a * h) % 3); return NQ({ p: `밑면이 한 변의 길이가 ${a} cm인 정사각형이고 높이가 ${h} cm인 사각뿔의 부피는?`, ans: qi(a * a * h / 3), unit: 'cm³', hint: '뿔의 부피 = ⅓ × 밑넓이 × 높이', steps: [`${fr(1, 3)} × ${a}${sup(2)} × ${h} = ${a * a * h / 3}`] }); },
+    () => { const r = pick([1, 2, 3, 3, 6]); const ask = Math.random() < 0.5;
+      return ask ? NQ({ p: `반지름의 길이가 ${r} cm인 구의 <b>부피</b>는?`, ans: Q(4 * r * r * r, 3), unit: 'π cm³', hint: '구의 부피 = ⁴⁄₃πr³', steps: [`${fr(4, 3)} × π × ${r}${sup(3)} = ${qh(Q(4 * r * r * r, 3))}π`] })
+        : NQ({ p: `반지름의 길이가 ${r} cm인 구의 <b>겉넓이</b>는?`, ans: qi(4 * r * r), unit: 'π cm²', hint: '구의 겉넓이 = 4πr²', steps: [`4 × π × ${r}${sup(2)} = ${4 * r * r}π`] }); },
+    () => { const r = ri(2, 8); return NQ({ p: `반지름의 길이가 ${r} cm인 <b>반구</b>의 겉넓이는?`, ans: qi(3 * r * r), unit: 'π cm²', hint: '반구의 겉넓이 = 구의 겉넓이의 반 + 잘린 면(원)의 넓이. 원을 빠뜨리지 마!', steps: [`곡면: 4π × ${r}${sup(2)} ÷ 2 = ${2 * r * r}π`, `밑면(원): π × ${r}${sup(2)} = ${r * r}π`, `합: ${3 * r * r}π`] }); },
+    () => { const r = ri(2, 6), l = r + ri(2, 8); return NQ({ p: `밑면의 반지름의 길이가 ${r} cm, 모선의 길이가 ${l} cm인 원뿔의 겉넓이는?`, ans: qi(r * r + r * l), unit: 'π cm²', hint: '원뿔의 겉넓이 = 밑넓이(πr²) + 옆넓이(부채꼴, πrl)', steps: [`밑넓이: π × ${r}${sup(2)} = ${r * r}π`, `옆넓이: π × ${r} × ${l} = ${r * l}π`, `합: ${r * r + r * l}π`] }); },
+    () => { const r = pick([1, 2, 3]); const cyl = 2 * r * r * r; const which = pick([['구', 4 * r * r * r / 3, '2/3'], ['원뿔', 2 * r * r * r / 3, '1/3']]);
+      return NQ({ p: `반지름이 ${r} cm인 구가 원기둥 안에 꼭 맞게 들어 있어. 이 원기둥의 부피가 ${cyl}π cm³일 때, 원기둥에 꼭 맞는 <b>${which[0]}</b>의 부피는?`, ans: Q(3 * which[1], 3), unit: 'π cm³', hint: '꼭 맞는 원뿔 : 구 : 원기둥의 부피의 비는 1 : 2 : 3이야.', steps: [`원뿔 : 구 : 원기둥 = 1 : 2 : 3`, `${which[0]} = ${cyl}π × ${which[0] === '구' ? fr(2, 3) : fr(1, 3)} = ${qh(Q(3 * which[1], 3))}π`] }); },
+  ],
+};
+
+/* ───────── 9. 자료의 정리와 해석 ───────── */
+const CTX = [['모둠 학생들의 수학 쪽지 시험 점수를 조사한 자료', '점'], ['친구들이 일주일 동안 읽은 책의 쪽수를 조사한 자료', '쪽'], ['반 학생들의 1분 줄넘기 기록을 조사한 자료', '회'], ['모둠원들의 하루 스마트폰 사용 시간을 조사한 자료', '분']];
+function stemFig(data, unit) {
+  const stems = {}; for (const d of data) { const s = Math.floor(d / 10); (stems[s] = stems[s] || []).push(d % 10); }
+  const keys = Object.keys(stems).map(Number).sort((a, b) => a - b);
+  const s0 = keys[0], l0 = stems[s0].sort((a, b) => a - b)[0];
+  let h = `<table class="tbl stem"><thead><tr><th>줄기</th><th>잎</th></tr></thead><tbody>`;
+  for (const k of keys) h += `<tr><td>${k}</td><td>${stems[k].sort((a, b) => a - b).join('&ensp;')}</td></tr>`;
+  return h + `</tbody></table><div class="cap">(${s0}|${l0}${[2, 4, 5, 9].includes(l0) ? '는' : '은'} ${s0 * 10 + l0}${unit})</div>`;
+}
+function freqClasses() { const w = pick([5, 10]); const start = w === 10 ? pick([0, 10, 20, 30, 40, 50]) : pick([10, 20, 30, 40, 140]); const fs = Array.from({ length: 5 }, () => ri(1, 10)); return { w, start, fs }; }
+function histFig(c, unit) {
+  const W = 260, H = 170, L = 34, B = 140, top = 16; const max = Math.max(...c.fs); const yMax = Math.ceil(max / 2) * 2 + 2; const bw = (W - L - 14) / 5;
+  const yy = v_ => B - (B - top) * v_ / yMax;
+  let s = '';
+  for (let t = 0; t <= yMax; t += 2) s += `<line class="gd" x1="${L}" y1="${f1(yy(t))}" x2="${W - 10}" y2="${f1(yy(t))}"/><text class="tk" x="${L - 6}" y="${f1(yy(t)) + 4}" text-anchor="end">${t}</text>`;
+  c.fs.forEach((f, i) => { s += `<rect class="hb" x="${f1(L + i * bw)}" y="${f1(yy(f))}" width="${f1(bw)}" height="${f1(B - yy(f))}"/>`; });
+  for (let i = 0; i <= 5; i++) s += `<text class="tk" x="${f1(L + i * bw)}" y="${B + 14}" text-anchor="middle">${c.start + i * c.w}</text>`;
+  s += `<line class="ax" x1="${L}" y1="${B}" x2="${W - 10}" y2="${B}"/><line class="ax" x1="${L}" y1="${B}" x2="${L}" y2="${top - 4}"/>`;
+  s += `<text class="tk" x="${W - 10}" y="${B + 28}" text-anchor="end">(${unit})</text><text class="tk" x="4" y="${top - 6}">(명)</text>`;
+  return SV(W, H + 14, s);
+}
+const G_DATA = {
+  d1: [
+    () => { const ctx = pick(CTX); const n = ri(5, 7); let xs; do { xs = Array.from({ length: n }, () => ri(3, 20)); } while (xs.reduce((a, b) => a + b) % n); const s = xs.reduce((a, b) => a + b);
+      return NQ({ p: `다음은 ${ctx[0]}야. 이 자료의 <b>평균</b>은?<div class="data">${xs.join(', ')} (단위: ${ctx[1]})</div>`, ans: qi(s / n), unit: ctx[1], hint: '평균 = (자료 값의 총합) ÷ (자료의 개수)', steps: [`합: ${xs.join(' + ')} = ${s}`, `${s} ÷ ${n} = ${s / n}`] }); },
+    () => { const ctx = pick(CTX); const n = ri(5, 8); const xs = Array.from({ length: n }, () => ri(1, 30)); const so = xs.slice().sort((a, b) => a - b); const med = n % 2 ? qi(so[(n - 1) / 2]) : Q(so[n / 2 - 1] + so[n / 2], 2);
+      return NQ({ p: `다음은 ${ctx[0]}야. 이 자료의 <b>중앙값</b>은?<div class="data">${xs.join(', ')} (단위: ${ctx[1]})</div>`, ans: med, unit: ctx[1], hint: '먼저 크기 순서로 늘어놓아. 개수가 짝수면 가운데 두 값의 평균이야.', steps: [`크기순: ${so.join(', ')}`, n % 2 ? `가운데(${(n + 1) / 2}번째) 값: ${so[(n - 1) / 2]}` : `가운데 두 값 ${so[n / 2 - 1]}, ${so[n / 2]}의 평균: ${qh(med)}`] }); },
+    () => { const ctx = pick(CTX); let xs, mode; do { xs = Array.from({ length: ri(7, 10) }, () => ri(1, 9)); const cnt = {}; xs.forEach(x => cnt[x] = (cnt[x] || 0) + 1); const mx = Math.max(...Object.values(cnt)); const ms = Object.keys(cnt).filter(k => cnt[k] === mx); mode = ms.length === 1 && mx >= 2 ? +ms[0] : null; } while (mode === null);
+      return NQ({ p: `다음 자료의 <b>최빈값</b>은?<div class="data">${xs.join(', ')}</div>`, ans: qi(mode), hint: '가장 많이 나온 값이 최빈값이야.', steps: [`${mode}가 ${xs.filter(x => x === mode).length}번으로 가장 많아.`] }); },
+    () => { const ctx = pick(CTX); const n = ri(4, 6); let xs, m, x; do { xs = Array.from({ length: n - 1 }, () => ri(3, 20)); m = ri(6, 16); x = m * n - xs.reduce((a, b) => a + b); } while (x < 1 || x > 30);
+      return NQ({ p: `다음 자료의 평균이 ${m}일 때, ${M(X)}의 값은?<div class="data">${xs.join(', ')}, ${M(X)}</div>`, pre: M(X + ' ='), ans: qi(x), hint: '평균 × 개수 = 총합이야.', steps: [`총합 = ${m} × ${n} = ${m * n}`, `${M(X + ' = ' + m * n + ' ' + MI + ' ' + xs.reduce((a, b) => a + b) + ' = ' + x)}`] }); },
+  ],
+  d2: [
+    () => { const ctx = pick(CTX.slice(0, 3)); const base = pick([1, 2, 4, 5]); const data = Array.from({ length: ri(11, 16) }, () => ri(base * 10, base * 10 + 39)); const so = data.slice().sort((a, b) => a - b); const n = data.length;
+      const k = Math.floor(so[Math.floor(n / 2)] / 10) * 10 + pick([0, 5]);
+      const ask = pick([
+        ['전체 자료의 개수는?', n, '개', `잎의 개수를 모두 세면 ${n}개`],
+        [`가장 큰 값과 가장 작은 값의 차는?`, so[n - 1] - so[0], ctx[1], `${so[n - 1]} ${MI} ${so[0]} = ${so[n - 1] - so[0]}`],
+        [`${k}${ctx[1]} 이상인 자료는 몇 개일까?`, so.filter(x => x >= k).length, '개', `${k} 이상: ${so.filter(x => x >= k).join(', ')}`],
+        [`큰 쪽에서 3번째 값은?`, so[n - 3], ctx[1], `큰 순서: ${so.slice().reverse().slice(0, 3).join(', ')} → ${so[n - 3]}`],
+      ]);
+      return NQ({ p: `다음은 ${ctx[0]}를 줄기와 잎 그림으로 나타낸 거야. ${ask[0]}`, fig: stemFig(data, ctx[1]), ans: qi(ask[1]), unit: ask[2], hint: '줄기는 십의 자리, 잎은 일의 자리 숫자야.', steps: [ask[3]] }); },
+  ],
+  d3: [
+    () => { const c = freqClasses(); const unit = pick(['점', '회', '분']); const total = c.fs.reduce((a, b) => a + b); const hide = ri(0, 4); const k = c.start + ri(2, 3) * c.w;
+      const ask = pick([
+        [`A의 값은?`, c.fs[hide], '', `A = ${total} ${MI} (${c.fs.filter((_, i) => i !== hide).join(' + ')}) = ${c.fs[hide]}`],
+        [`계급의 크기는?`, c.w, unit, `${c.start + c.w} ${MI} ${c.start} = ${c.w}`],
+        [`${k}${unit} 이상인 학생은 몇 명일까? (A의 값을 먼저 구해 봐)`, c.fs.filter((_, i) => c.start + i * c.w >= k).reduce((a, b) => a + b, 0), '명', `A = ${c.fs[hide]}, ${k} 이상 계급의 도수 합: ${c.fs.filter((_, i) => c.start + i * c.w >= k).join(' + ')}`],
+      ]);
+      let t = `<table class="tbl"><thead><tr><th>${unit === '점' ? '점수' : unit === '회' ? '기록' : '시간'} (${unit})</th><th>학생 수 (명)</th></tr></thead><tbody>`;
+      c.fs.forEach((f, i) => t += `<tr><td>${c.start + i * c.w} 이상 ~ ${c.start + (i + 1) * c.w} 미만</td><td>${i === hide ? '<b>A</b>' : f}</td></tr>`);
+      t += `<tr class="sum"><td>합계</td><td>${total}</td></tr></tbody></table>`;
+      return NQ({ p: `다음 도수분포표에서 ${ask[0]}`, fig: t, ans: qi(ask[1]), unit: ask[2], hint: '도수를 모두 더하면 전체 학생 수(합계)야.', steps: [ask[3]] }); },
+    () => { const N_ = pick([20, 25, 40, 50]); let a; do { a = ri(2, Math.floor(N_ / 2)); } while ((a * 100) % N_); const lo = pick([60, 70, 80]);
+      return NQ({ p: `반 학생 ${N_}명의 수학 점수를 조사했더니 ${lo}점 이상인 학생이 ${a}명이었어. ${lo}점 이상인 학생은 전체의 몇 %일까?`, ans: qi(a * 100 / N_), unit: '%', hint: '(해당 도수) ÷ (전체 도수) × 100', steps: [`${a} ÷ ${N_} × 100 = ${a * 100 / N_}%`] }); },
+  ],
+  d4: [
+    () => { const c = freqClasses(); const unit = pick(['점', '회', '분']); const total = c.fs.reduce((a, b) => a + b); const imax = c.fs.indexOf(Math.max(...c.fs));
+      const ask = pick([
+        ['전체 학생 수는?', total, '명', `${c.fs.join(' + ')} = ${total}`],
+        ['히스토그램의 모든 직사각형의 넓이의 합은?', total * c.w, '', `(계급의 크기) × (도수의 총합) = ${c.w} × ${total} = ${total * c.w}`],
+        [`${c.start + 3 * c.w}${unit} 이상인 학생은 몇 명일까?`, c.fs[3] + c.fs[4], '명', `${c.fs[3]} + ${c.fs[4]} = ${c.fs[3] + c.fs[4]}`],
+      ]);
+      return NQ({ p: `다음 히스토그램에서 ${ask[0]}`, fig: histFig(c, unit), ans: qi(ask[1]), unit: ask[2], hint: '직사각형의 가로는 계급의 크기, 세로는 도수야.', steps: [ask[3]] }); },
+    () => { const N_ = pick([20, 25, 40, 50]); const t = pick(['rf', 'f', 'N']);
+      if (t === 'rf') { const a = ri(1, Math.floor(N_ / 2)); return NQ({ p: `전체 도수가 ${N_}인 도수분포표에서 어떤 계급의 도수가 ${a}일 때, 이 계급의 <b>상대도수</b>는? (소수로)`, ans: Q(a, N_), hint: '상대도수 = (그 계급의 도수) ÷ (도수의 총합)', steps: [`${a} ÷ ${N_} = ${a / N_}`] }); }
+      if (t === 'f') { const a = ri(2, Math.floor(N_ / 2)); const rf = a / N_; return NQ({ p: `전체 학생 ${N_}명 중 어떤 계급의 상대도수가 ${rf}일 때, 이 계급의 도수는?`, ans: qi(a), unit: '명', hint: '도수 = (도수의 총합) × (상대도수)', steps: [`${N_} × ${rf} = ${a}`] }); }
+      const rf = pick([0.1, 0.2, 0.25, 0.4, 0.5, 0.15, 0.35]); const tot = pick([20, 40, 60, 80, 100]); const a = Math.round(tot * rf);
+      return NQ({ p: `어떤 계급의 도수가 ${a}이고 상대도수가 ${rf}일 때, 도수의 총합은?`, ans: qi(tot), hint: '도수의 총합 = (그 계급의 도수) ÷ (상대도수)', steps: [`${a} ÷ ${rf} = ${tot}`] }); },
+    () => { const c = freqClasses(); const total = c.fs.reduce((a, b) => a + b);
+      return NQ({ p: `계급의 크기가 ${c.w}이고 도수의 총합이 ${total}인 도수분포다각형이 있어. 도수분포다각형과 가로축으로 둘러싸인 부분의 넓이는?`, ans: qi(c.w * total), hint: '도수분포다각형과 가로축 사이의 넓이 = 히스토그램 직사각형 넓이의 합', steps: [`${c.w} × ${total} = ${c.w * total}`] }); },
+  ],
+};
+// ==GEN-END==
+/* ───────── 섬(단원)과 스테이지 ───────── */
+const ISLANDS = [
+  { id: 'prime', no: 'Ⅰ', name: '소인수 화산섬', unit: '소인수분해', sem: 1, color: '#E4572E', art: 'volcano', G: G_PRIME, boss: '화산 군주 프라임', stages: [
+    { id: 'p1', name: '소수와 합성수', mon: '합성 슬라임', c: `<b>소수</b>: 1보다 큰 자연수 중 약수가 1과 자기 자신뿐인 수 (2, 3, 5, 7, 11, …)<br><b>합성수</b>: 약수가 3개 이상인 자연수 (4, 6, 8, 9, …)<br>1은 소수도 합성수도 아니야. 2는 유일한 짝수 소수!` },
+    { id: 'p2', name: '거듭제곱', mon: '지수 박쥐', c: `같은 수를 여러 번 곱하면 거듭제곱으로 나타내.<div class="data">${M('2 × 2 × 2 = 2' + sup(3))}</div>2는 <b>밑</b>, 3은 <b>지수</b>(곱한 횟수)야. 분수도 똑같아: ${M(fr(1, 3) + ' × ' + fr(1, 3) + ' = (' + fr(1, 3) + ')' + sup(2))}` },
+    { id: 'p3', name: '소인수분해', mon: '쪼개기 골렘', c: `자연수를 소수들만의 곱으로 나타내는 것이야. 가장 작은 소수부터 나누어 가.<div class="data">${M('60 = 2' + sup(2) + ' × 3 × 5')}</div>60의 소인수는 2, 3, 5. 어떤 수의 <b>제곱</b>이 되려면 소인수분해했을 때 모든 지수가 짝수여야 해.` },
+    { id: 'p4', name: '약수의 개수', mon: '약수 거미', c: `${M(A_ + sup(v('m')) + ' × ' + B_ + sup(v('n')))} (${M(A_ + ', ' + B_)}는 서로 다른 소수)의 약수의 개수는<div class="data">${M('(' + v('m') + ' + 1) × (' + v('n') + ' + 1)')}</div>예: ${M('12 = 2' + sup(2) + ' × 3')} → ${M('3 × 2 = 6')}개` },
+    { id: 'p5', name: '최대공약수와 최소공배수', mon: '공배수 쌍둥이', c: `소인수분해한 다음,<br><b>최대공약수</b>: 공통인 소인수를 지수가 <b>작은</b> 것으로 곱해.<br><b>최소공배수</b>: 모든 소인수를 지수가 <b>큰</b> 것으로 곱해.<br>공약수 = 최대공약수의 약수, 공배수 = 최소공배수의 배수.` },
+  ] },
+  { id: 'integer', no: 'Ⅱ', name: '음양 빙하섬', unit: '정수와 유리수', sem: 1, color: '#3B97C4', art: 'ice', G: G_INT, boss: '빙하 여왕 마이너스', stages: [
+    { id: 'i1', name: '정수와 유리수', mon: '분류 펭귄', c: `양의 정수(자연수), 0, 음의 정수를 합쳐 <b>정수</b>라고 해.<br>${M(fr(A_, B_))} (${M(B_ + ' ≠ 0')}) 꼴로 나타낼 수 있는 수가 <b>유리수</b>야.<br>${M(fr(6, 3) + ' = 2')}처럼 약분해서 정수가 되면 정수야. 0은 양수도 음수도 아니야.` },
+    { id: 'i2', name: '수직선과 절댓값', mon: '절댓값 물개', c: `<b>절댓값</b> ${M('|' + A_ + '|')}: 수직선에서 0과 ${M(A_)} 사이의 거리.<div class="data">${M('|' + MI + '5| = |+5| = 5')}</div>양수는 절댓값이 클수록 크고, 음수는 절댓값이 클수록 <b>작아</b>.` },
+    { id: 'i3', name: '덧셈과 뺄셈', mon: '부호 눈사람', c: `부호가 같으면: 절댓값끼리 더하고 공통 부호.<br>부호가 다르면: 절댓값의 차에 절댓값이 큰 쪽 부호.<br>뺄셈은 빼는 수의 부호를 바꿔서 더해:<div class="data">${M('(' + MI + '3) ' + MI + ' (' + MI + '5) = (' + MI + '3) + (+5) = 2')}</div>` },
+    { id: 'i4', name: '곱셈과 나눗셈', mon: '음수 고드름', c: `음수가 <b>짝수</b> 개면 +, <b>홀수</b> 개면 −.<br>나눗셈은 역수를 곱해: ${M(A_ + ' ÷ ' + B_ + ' = ' + A_ + ' × ' + fr(1, B_))}<br>주의! ${M('(' + MI + '2)' + sup(2) + ' = 4')}지만 ${M(MI + '2' + sup(2) + ' = ' + MI + '4')}` },
+    { id: 'i5', name: '혼합 계산', mon: '괄호 예티', c: `계산 순서<br>① 거듭제곱<br>② 괄호: ( ) → { } → [ ]<br>③ 곱셈과 나눗셈<br>④ 덧셈과 뺄셈` },
+  ] },
+  { id: 'expr', no: 'Ⅲ', name: '문자 정글섬', unit: '문자의 사용과 식', sem: 1, color: '#2E9E57', art: 'palm', G: G_EXPR, boss: '정글 왕 엑스', stages: [
+    { id: 'e1', name: '기호의 생략', mon: '생략 앵무새', c: `곱셈 기호 ×는 생략하고 수를 문자 앞에, 문자는 알파벳 순서로:<div class="data">${M(A_ + ' × 3 × ' + B_ + ' = 3' + A_ + B_)}</div>1은 생략: ${M('1 × ' + A_ + ' = ' + A_ + ', (' + MI + '1) × ' + A_ + ' = ' + MI + A_)}<br>나눗셈은 분수로: ${M(A_ + ' ÷ ' + B_ + ' = ' + fr(A_, B_))}` },
+    { id: 'e2', name: '식의 값', mon: '대입 카멜레온', c: `문자에 수를 넣어(대입) 계산한 값이야.<br>음수를 대입할 때는 괄호를 꼭!<div class="data">${M(A_ + ' = ' + MI + '2')}일 때 ${M(A_ + sup(2) + ' = (' + MI + '2)' + sup(2) + ' = 4')}</div>분모에 분수를 대입하면 "÷ 분수"로 바꿔 계산해.` },
+    { id: 'e3', name: '다항식과 일차식', mon: '항 뱀', c: `<b>항</b>: 수나 문자의 곱으로 된 식 / <b>계수</b>: 문자 앞의 수(부호 포함)<br><b>차수</b>: 문자가 곱해진 개수 / 차수가 1인 다항식이 <b>일차식</b><br><b>동류항</b>: 문자와 차수가 같은 항 (상수항끼리도 동류항)` },
+    { id: 'e4', name: '일차식의 계산', mon: '동류항 원숭이', c: `분배법칙으로 괄호를 풀고 동류항끼리 모아.<br>괄호 앞이 −면 모든 항의 부호가 바뀌어:<div class="data">${M(MI + '(2' + X + ' ' + MI + ' 3) = ' + MI + '2' + X + ' + 3')}</div>분수꼴은 분모의 최소공배수로 통분부터!` },
+    { id: 'e5', name: '문자로 식 세우기', mon: '문장 나무정령', c: `(거리) = (속력) × (시간), (시간) = ${M(fr('(거리)', '(속력)'))}<br>(가격) = (한 개의 값) × (개수)<br>${M(A_ + '% = ' + fr(A_, 100))}, 두 자리 수 = ${M('10 × (십의 자리) + (일의 자리)')}` },
+  ] },
+  { id: 'equation', no: 'Ⅳ', name: '등식 사막섬', unit: '일차방정식', sem: 1, color: '#D9931F', art: 'pyramid', G: G_EQ, boss: '사막 파라오 이퀄', stages: [
+    { id: 'q1', name: '방정식과 해', mon: '해 찾기 전갈', c: `<b>방정식</b>: ${M(X)}의 값에 따라 참·거짓이 정해지는 등식 / <b>해</b>: 참이 되게 하는 ${M(X)}의 값<br><b>항등식</b>: ${M(X)}에 어떤 값을 넣어도 항상 참인 등식<br><b>등식의 성질</b>: 양변에 같은 수를 더하고, 빼고, 곱하고, (0이 아닌 수로) 나누어도 등식은 성립해.` },
+    { id: 'q2', name: '일차방정식 풀기', mon: '이항 낙타', c: `<b>이항</b>: 한 변의 항을 부호를 바꿔 다른 변으로 옮기는 것.<div class="data">${M('3' + X + ' + 5 = 11 → 3' + X + ' = 11 ' + MI + ' 5 → ' + X + ' = 2')}</div>${M(X)}항은 좌변, 상수항은 우변으로 모으고 양변을 ${M(X)}의 계수로 나눠.` },
+    { id: 'q3', name: '복잡한 일차방정식', mon: '괄호 모래폭풍', c: `괄호 → 분배법칙으로 풀기<br>계수가 소수 → 양변에 10, 100 곱하기<br>계수가 분수 → 양변에 분모의 최소공배수 곱하기<br>비례식 ${M(A_ + ' : ' + B_ + ' = ' + C_ + ' : ' + v('d'))} → ${M(A_ + v('d') + ' = ' + B_ + C_)}` },
+    { id: 'q4', name: '일차방정식의 활용', mon: '활용 스핑크스', c: `① 구하려는 것을 ${M(X)}로 놓기<br>② 문제의 뜻에 맞게 방정식 세우기<br>③ 방정식 풀기<br>④ 답이 문제의 뜻에 맞는지 확인 (사람 수, 나이는 자연수!)` },
+  ] },
+  { id: 'coord', no: 'Ⅴ', name: '좌표 하늘섬', unit: '좌표평면과 그래프', sem: 1, color: '#7E6CC4', art: 'cloud', G: G_COORD, boss: '하늘 제왕 그래프', stages: [
+    { id: 'c1', name: '순서쌍과 좌표', mon: '좌표 올빼미', c: `점의 위치는 ${M('(' + X + '좌표, ' + Y + '좌표)')} 순서로 나타내. 원점은 ${M('O(0, 0)')}.<br>점 ${M('(' + A_ + ', ' + B_ + ')')}와 대칭인 점: ${M(X)}축 → ${M('(' + A_ + ', ' + MI + B_ + ')')}, ${M(Y)}축 → ${M('(' + MI + A_ + ', ' + B_ + ')')}, 원점 → ${M('(' + MI + A_ + ', ' + MI + B_ + ')')}` },
+    { id: 'c2', name: '사분면', mon: '사분면 구름', c: `제1사분면 (+, +)&ensp;제2사분면 (−, +)<br>제3사분면 (−, −)&ensp;제4사분면 (+, −)<br>${M(X)}축, ${M(Y)}축 위의 점은 어느 사분면에도 속하지 않아.` },
+    { id: 'c3', name: '정비례', mon: '비례 독수리', c: `${M(X)}가 2배, 3배, …가 되면 ${M(Y)}도 2배, 3배, … → ${M(Y + ' = ' + A_ + X)} (${M(A_ + ' ≠ 0')})<br>그래프는 원점을 지나는 직선.<br>${M(A_ + ' &gt; 0')}: 제1, 3사분면 (오른쪽 위로) / ${M(A_ + ' &lt; 0')}: 제2, 4사분면 (오른쪽 아래로)` },
+    { id: 'c4', name: '반비례', mon: '쌍곡 바람정령', c: `${M(X)}가 2배, 3배, …가 되면 ${M(Y)}는 ${fr(1, 2)}배, ${fr(1, 3)}배, … → ${M(Y + ' = ' + fr(A_, X))}, ${M(X + Y + ' = ' + A_)} (일정)<br>그래프는 원점을 지나지 않는 한 쌍의 곡선.<br>${M(A_ + ' &gt; 0')}: 제1, 3사분면 / ${M(A_ + ' &lt; 0')}: 제2, 4사분면` },
+  ] },
+  { id: 'geometry', no: 'Ⅵ', name: '기본 도형 성채섬', unit: '기본 도형 · 작도와 합동', sem: 2, color: '#C24E78', art: 'castle', G: G_GEO, boss: '성채 기사단장 콩그루', stages: [
+    { id: 'g1', name: '점, 선, 면, 각', mon: '교점 기사', c: `직선 AB = 직선 BA, 선분 AB = 선분 BA, 하지만 반직선 AB ≠ 반직선 BA (시작점과 방향이 달라).<br>입체도형에서 교점 = 꼭짓점, 교선 = 모서리.<br><b>중점</b>: 선분을 이등분하는 점` },
+    { id: 'g2', name: '맞꼭지각', mon: '맞꼭지 가위게', c: `두 직선이 만날 때 마주 보는 각을 <b>맞꼭지각</b>이라 하고, 크기가 같아.<br>한 직선 위에 있는 각의 합은 180°(평각)야.` },
+    { id: 'g3', name: '평행선과 각', mon: '평행 철길뱀', c: `두 직선이 평행하면 <b>동위각</b>(같은 위치의 각)과 <b>엇각</b>(엇갈린 위치의 각)의 크기가 같아.<br>꺾인 선이 있으면 꺾인 점을 지나는 평행선을 하나 그어 봐!` },
+    { id: 'g4', name: '작도와 합동', mon: '합동 거울요정', c: `삼각형이 될 조건: (가장 긴 변) &lt; (나머지 두 변의 합)<br><b>합동 조건</b><br>SSS: 세 변 / SAS: 두 변과 그 <b>끼인각</b> / ASA: 한 변과 그 <b>양 끝 각</b>` },
+  ] },
+  { id: 'polygon', no: 'Ⅶ', name: '다각형 협곡섬', unit: '평면도형의 성질', sem: 2, color: '#B0602F', art: 'mesa', G: G_POLY, boss: '협곡 거인 폴리곤', stages: [
+    { id: 'y1', name: '다각형의 대각선', mon: '대각선 도마뱀', c: `n각형의 한 꼭짓점에서 그을 수 있는 대각선: ${M(v('n') + ' ' + MI + ' 3')}개<br>이때 생기는 삼각형: ${M(v('n') + ' ' + MI + ' 2')}개<br>대각선의 총 개수: ${M(fr(v('n') + '(' + v('n') + ' ' + MI + ' 3)', 2))}` },
+    { id: 'y2', name: '다각형의 내각과 외각', mon: '내각 협곡트롤', c: `n각형의 내각의 합: ${M('180° × (' + v('n') + ' ' + MI + ' 2)')}<br>외각의 합: 항상 360°<br>정n각형 한 외각: ${M(fr('360°', v('n')))}, 한 내각: ${M('180° ' + MI + ' (한 외각)')}` },
+    { id: 'y3', name: '삼각형의 내각과 외각', mon: '삼각 매', c: `삼각형의 세 내각의 합은 180°.<br>삼각형의 한 외각의 크기는 그와 이웃하지 않는 두 내각의 크기의 합과 같아.` },
+    { id: 'y4', name: '원과 부채꼴', mon: '부채꼴 파이 요괴', c: `반지름 ${M(v('r'))}, 중심각 ${M(X)}°인 부채꼴<br>호의 길이: ${M(v('l') + ' = 2π' + v('r') + ' × ' + fr(X, 360))}<br>넓이: ${M(v('S') + ' = π' + v('r') + sup(2) + ' × ' + fr(X, 360) + ' = ' + fr(1, 2) + v('r') + v('l'))}<br>한 원에서 호의 길이와 넓이는 중심각의 크기에 정비례해.` },
+  ] },
+  { id: 'solid', no: 'Ⅷ', name: '입체 탑섬', unit: '입체도형의 성질', sem: 2, color: '#4F74B3', art: 'tower', G: G_SOLID, boss: '탑의 주인 볼륨', stages: [
+    { id: 's1', name: '다면체', mon: '다면체 큐브', c: `다각형인 면으로만 둘러싸인 입체도형.<br>n각기둥: 면 n+2, 모서리 3n, 꼭짓점 2n<br>n각뿔: 면 n+1, 모서리 2n, 꼭짓점 n+1<br>n각뿔대: 면 n+2, 모서리 3n, 꼭짓점 2n<br>옆면: 기둥 = 직사각형, 뿔 = 삼각형, 뿔대 = 사다리꼴` },
+    { id: 's2', name: '정다면체', mon: '정다면체 수정', c: `모든 면이 합동인 정다각형이고, 각 꼭짓점에 모인 면의 개수가 같은 다면체. 딱 5가지!<br>정삼각형 면: 정사면체, 정팔면체, 정이십면체<br>정사각형 면: 정육면체 / 정오각형 면: 정십이면체` },
+    { id: 's3', name: '회전체', mon: '회전 팽이', c: `평면도형을 한 직선(회전축)을 중심으로 1회전 시킨 입체도형: 원기둥, 원뿔, 원뿔대, 구.<br>회전축에 수직인 평면으로 자르면 단면은 항상 <b>원</b>.<br>회전축을 포함하는 평면으로 자르면 단면은 선대칭도형.` },
+    { id: 's4', name: '기둥의 겉넓이와 부피', mon: '기둥 골렘', c: `기둥의 부피 = (밑넓이) × (높이)<br>기둥의 겉넓이 = (밑넓이) × 2 + (옆넓이)<br>옆넓이 = (밑면의 둘레) × (높이)<br>원기둥: ${M(v('V') + ' = π' + v('r') + sup(2) + v('h'))}, ${M(v('S') + ' = 2π' + v('r') + sup(2) + ' + 2π' + v('r') + v('h'))}` },
+    { id: 's5', name: '뿔과 구', mon: '원뿔 마법사', c: `뿔의 부피 = ${fr(1, 3)} × (밑넓이) × (높이)<br>원뿔의 겉넓이 = ${M('π' + v('r') + sup(2) + ' + π' + v('r') + v('l'))} (${M(v('l'))}: 모선)<br>구의 부피 ${M(fr(4, 3) + 'π' + v('r') + sup(3))}, 겉넓이 ${M('4π' + v('r') + sup(2))}<br>꼭 맞는 원뿔 : 구 : 원기둥 = 1 : 2 : 3` },
+  ] },
+  { id: 'data', no: 'Ⅸ', name: '자료 등대섬', unit: '자료의 정리와 해석', sem: 2, color: '#1F9488', art: 'lighthouse', G: G_DATA, boss: '등대 유령 스태티', stages: [
+    { id: 'd1', name: '대푯값', mon: '평균 갈매기', c: `<b>평균</b> = (자료 값의 총합) ÷ (자료의 개수)<br><b>중앙값</b>: 크기순으로 늘어놓았을 때 가운데 값 (개수가 짝수면 가운데 두 값의 평균)<br><b>최빈값</b>: 가장 많이 나타나는 값` },
+    { id: 'd2', name: '줄기와 잎 그림', mon: '줄기 해초', c: `십의 자리를 <b>줄기</b>, 일의 자리를 <b>잎</b>으로 정리한 그림이야.<br>잎의 개수 = 자료의 개수. 원래 자료 값을 그대로 읽을 수 있어.` },
+    { id: 'd3', name: '도수분포표', mon: '도수 문어', c: `<b>계급</b>: 자료를 나눈 구간 / <b>계급의 크기</b>: 구간의 폭<br><b>도수</b>: 각 계급에 속하는 자료의 수<br>도수의 총합 = 전체 자료의 수<br>백분율(%) = ${M(fr('(도수)', '(도수의 총합)') + ' × 100')}` },
+    { id: 'd4', name: '히스토그램과 상대도수', mon: '막대 해파리', c: `히스토그램: 가로는 계급, 세로는 도수인 직사각형 그래프<br>직사각형 넓이의 합 = (계급의 크기) × (도수의 총합)<br><b>상대도수</b> = ${M(fr('(그 계급의 도수)', '(도수의 총합)'))}, 상대도수의 총합은 항상 1` },
+  ] },
+];
+const FINAL = { id: 'final', name: '수학 마왕성', boss: '수학 마왕 인피니티', color: '#5B3F8C' };
+const STAGE = {};
+ISLANDS.forEach(I => I.stages.forEach((s, i) => { s.isl = I; s.idx = i; STAGE[s.id] = s; }));
+const ISL = {}; ISLANDS.forEach(I => ISL[I.id] = I);
+const TINT = [['#ffffff', 0], ['#ffd23f', 0.28], ['#7b2ff7', 0.22], ['#00b3a4', 0.26], ['#ff4f9a', 0.24]];
+function monColor(sid) { const s = STAGE[sid]; if (!s) return '#6E8796'; const [c, t] = TINT[s.idx % TINT.length]; return hexMix(s.isl.color, c, t); }
+
+/* ───────── 그림: 섬과 몬스터 ───────── */
+function hexMix(hex, to, t) { const a = parseInt(hex.slice(1), 16), b = parseInt(to.slice(1), 16); const ch = (x, s) => (x >> s) & 255; const m = s => Math.round(ch(a, s) + (ch(b, s) - ch(a, s)) * t); return '#' + ((1 << 24) + (m(16) << 16) + (m(8) << 8) + m(0)).toString(16).slice(1); }
+function hashStr(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function rng(seed) { let s = seed || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
+function blob(cx, cy, rx, ry, n, jit, r) {
+  const pts = []; for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2 - Math.PI / 2; const k = 1 + (r() - 0.5) * jit; pts.push([cx + Math.cos(a) * rx * k, cy + Math.sin(a) * ry * k]); }
+  let d = `M${f1(pts[0][0])} ${f1(pts[0][1])}`;
+  for (let i = 0; i < n; i++) { const p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n], p3 = pts[(i + 2) % n];
+    d += ` C${f1(p1[0] + (p2[0] - p0[0]) / 6)} ${f1(p1[1] + (p2[1] - p0[1]) / 6)} ${f1(p2[0] - (p3[0] - p1[0]) / 6)} ${f1(p2[1] - (p3[1] - p1[1]) / 6)} ${f1(p2[0])} ${f1(p2[1])}`; }
+  return d + 'Z';
+}
+function monsterSVG(key, color, o = {}) {
+  const r = rng(hashStr(key)); const body = color, dark = hexMix(color, '#0b1620', 0.45), light = hexMix(color, '#ffffff', 0.55);
+  const cx = 80, cy = 86, rx = 46 + r() * 10, ry = 40 + r() * 10;
+  const sil = o.sil; const fill = sil ? 'var(--sil)' : body, stroke = sil ? 'var(--sil)' : dark;
+  let s = '';
+  // 다리
+  s += `<ellipse cx="${cx - 22}" cy="${cy + ry - 2}" rx="12" ry="8" fill="${stroke}"/><ellipse cx="${cx + 22}" cy="${cy + ry - 2}" rx="12" ry="8" fill="${stroke}"/>`;
+  // 뿔/귀/더듬이
+  const top = Math.floor(r() * 4);
+  if (top === 0) s += `<path d="M${cx - 26} ${cy - ry + 12} L${cx - 34} ${cy - ry - 18} L${cx - 12} ${cy - ry + 4}Z M${cx + 26} ${cy - ry + 12} L${cx + 34} ${cy - ry - 18} L${cx + 12} ${cy - ry + 4}Z" fill="${stroke}"/>`;
+  if (top === 1) s += `<path d="M${cx} ${cy - ry + 4} Q${cx + 6} ${cy - ry - 22} ${cx + 18} ${cy - ry - 24}" stroke="${stroke}" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="${cx + 19}" cy="${cy - ry - 25}" r="6" fill="${sil ? fill : light}" stroke="${stroke}" stroke-width="3"/>`;
+  if (top === 2) s += `<ellipse cx="${cx - 34}" cy="${cy - ry + 10}" rx="12" ry="16" fill="${fill}" stroke="${stroke}" stroke-width="4" transform="rotate(-25 ${cx - 34} ${cy - ry + 10})"/><ellipse cx="${cx + 34}" cy="${cy - ry + 10}" rx="12" ry="16" fill="${fill}" stroke="${stroke}" stroke-width="4" transform="rotate(25 ${cx + 34} ${cy - ry + 10})"/>`;
+  // 몸
+  s += `<path d="${blob(cx, cy, rx, ry, 9, 0.2, r)}" fill="${fill}" stroke="${stroke}" stroke-width="4.5" stroke-linejoin="round"/>`;
+  if (!sil) s += `<ellipse cx="${cx}" cy="${cy + ry * 0.38}" rx="${rx * 0.5}" ry="${ry * 0.32}" fill="${light}" opacity=".55"/>`;
+  if (top === 3 && !sil) for (let i = -1; i <= 1; i++) s += `<path d="M${cx + i * 16 - 7} ${cy - ry + 6} L${cx + i * 16} ${cy - ry - 10} L${cx + i * 16 + 7} ${cy - ry + 6}Z" fill="${dark}"/>`;
+  if (!sil) {
+    // 눈
+    const ne = [1, 2, 2, 2, 3][Math.floor(r() * 5)]; const ey = cy - ry * 0.18; const er = ne === 1 ? 15 : ne === 2 ? 11.5 : 9;
+    const xs = ne === 1 ? [cx] : ne === 2 ? [cx - 17, cx + 17] : [cx - 24, cx, cx + 24];
+    s += '<g class="eyes">';
+    xs.forEach((x, i) => { const y = ne === 3 && i === 1 ? ey - 10 : ey; const lx = (r() - 0.5) * 4; s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="${er}" fill="#fff" stroke="${dark}" stroke-width="3"/><circle cx="${f1(x + lx)}" cy="${f1(y + 2)}" r="${er * 0.5}" fill="#10243A"/><circle cx="${f1(x + lx + er * 0.2)}" cy="${f1(y - er * 0.15)}" r="${er * 0.17}" fill="#fff"/>`; });
+    s += '</g>';
+    // 입
+    const mt = Math.floor(r() * 3); const my = cy + ry * 0.3;
+    if (mt === 0) s += `<path d="M${cx - 14} ${my} Q${cx} ${my + 14} ${cx + 14} ${my}" stroke="${dark}" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+    if (mt === 1) s += `<path d="M${cx - 16} ${my - 2} Q${cx} ${my + 20} ${cx + 16} ${my - 2}Z" fill="${dark}"/><path d="M${cx - 9} ${my} l4 6 l4 -6 M${cx + 1} ${my} l4 6 l4 -6" fill="#fff"/>`;
+    if (mt === 2) s += `<path d="M${cx - 16} ${my} l6 6 l6 -6 l6 6 l6 -6 l6 6" stroke="${dark}" stroke-width="3.5" fill="none" stroke-linejoin="round"/>`;
+    s += `<ellipse cx="${cx - rx * 0.6}" cy="${my - 4}" rx="7" ry="4" fill="#FF7A8A" opacity=".45"/><ellipse cx="${cx + rx * 0.6}" cy="${my - 4}" rx="7" ry="4" fill="#FF7A8A" opacity=".45"/>`;
+  }
+  if (o.boss) s += `<path d="M${cx - 24} ${cy - ry - 2} L${cx - 26} ${cy - ry - 26} L${cx - 12} ${cy - ry - 14} L${cx} ${cy - ry - 32} L${cx + 12} ${cy - ry - 14} L${cx + 26} ${cy - ry - 26} L${cx + 24} ${cy - ry - 2}Z" fill="${sil ? fill : '#F2B705'}" stroke="${sil ? fill : '#8A6200'}" stroke-width="3" stroke-linejoin="round"/>`;
+  if (o.ghost && !sil) s = `<g opacity=".82">${s}</g>`;
+  return `<svg class="mon" viewBox="0 0 160 160" aria-hidden="true">${s}</svg>`;
+}
+function islandArt(I, small) {
+  const c = I.color, dk = hexMix(c, '#0b1620', 0.4), lt = hexMix(c, '#ffffff', 0.35); const r = rng(hashStr(I.id + 'isl'));
+  let s = `<ellipse cx="70" cy="78" rx="62" ry="14" fill="var(--foam)"/>`;
+  s += `<path d="${blob(70, 66, 56, 20, 10, 0.18, r)}" fill="#E9CF92" stroke="#B99654" stroke-width="2"/>`;
+  s += `<path d="${blob(70, 60, 44, 15, 9, 0.2, r)}" fill="${lt}" stroke="${dk}" stroke-width="2"/>`;
+  const art = I.art;
+  if (art === 'volcano') s += `<path d="M46 60 L64 22 L78 22 L96 60Z" fill="${dk}"/><path d="M64 22 L78 22 L74 30 L68 28Z" fill="#FFB000"/><circle cx="74" cy="13" r="6" fill="var(--smoke)"/><circle cx="83" cy="7" r="4.5" fill="var(--smoke)"/>`;
+  if (art === 'ice') s += `<path d="M48 60 L58 26 L68 60Z M62 60 L74 16 L86 60Z M80 60 L88 36 L96 60Z" fill="#EAF6FB" stroke="${dk}" stroke-width="2" stroke-linejoin="round"/>`;
+  if (art === 'palm') s += `<path d="M70 60 Q66 40 74 22" stroke="#8A5A2B" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M74 22 q-18 -6 -26 6 M74 22 q16 -8 26 4 M74 22 q-6 -14 -18 -16 M74 22 q8 -14 20 -12" stroke="${dk}" stroke-width="6" fill="none" stroke-linecap="round"/><circle cx="86" cy="54" r="6" fill="${dk}"/>`;
+  if (art === 'pyramid') s += `<path d="M44 60 L70 22 L96 60Z" fill="#E7B451" stroke="#9C6B12" stroke-width="2" stroke-linejoin="round"/><path d="M70 22 L80 60" stroke="#9C6B12" stroke-width="2"/><path d="M58 46 h12 M58 51 h12" stroke="#9C6B12" stroke-width="2.4"/>`;
+  if (art === 'cloud') s += `<path d="M44 56 h52 a10 10 0 0 0 -8 -18 a14 14 0 0 0 -26 -6 a11 11 0 0 0 -18 24Z" fill="#F4F2FF" stroke="${dk}" stroke-width="2"/><path d="M60 26 v-12 M54 20 h12" stroke="${dk}" stroke-width="2.2"/>`;
+  if (art === 'castle') s += `<path d="M50 60 V34 h6 v-6 h6 v6 h6 v-6 h6 v6 h6 v-6 h6 v6 h6 V60Z" fill="${lt}" stroke="${dk}" stroke-width="2.2" stroke-linejoin="round"/><path d="M66 60 v-12 a4 4 0 0 1 8 0 v12" fill="${dk}"/><path d="M70 28 V12 l10 4 l-10 4" fill="${c}" stroke="${dk}" stroke-width="1.8"/>`;
+  if (art === 'mesa') s += `<path d="M44 60 L50 40 L66 40 L70 30 L88 30 L92 46 L98 60Z" fill="${c}" stroke="${dk}" stroke-width="2.2" stroke-linejoin="round"/><path d="M48 50 H94 M54 42 H88" stroke="${dk}" stroke-width="1.6" opacity=".6"/>`;
+  if (art === 'tower') s += `<rect x="60" y="26" width="20" height="34" fill="${lt}" stroke="${dk}" stroke-width="2.2"/><path d="M56 27 L70 6 L84 27Z" fill="${c}" stroke="${dk}" stroke-width="2.2" stroke-linejoin="round"/><ellipse cx="70" cy="60" rx="10" ry="3" fill="${dk}"/><rect x="66" y="36" width="8" height="10" rx="4" fill="${dk}"/>`;
+  if (art === 'lighthouse') s += `<path d="M62 60 L65 24 H75 L78 60Z" fill="#F7F7F2" stroke="${dk}" stroke-width="2.2"/><path d="M63.5 42 H76.5 M64.6 32 H75.4 M62.6 52 H77.4" stroke="#D9483B" stroke-width="5"/><rect x="63" y="16" width="14" height="8" fill="#FFD34D" stroke="${dk}" stroke-width="2"/><path d="M63 10 h14 l-7 -6Z" fill="${dk}"/><path d="M77 18 L112 8 L112 28Z" fill="#FFD34D" opacity=".45"/>`;
+  if (art === 'final') s += `<path d="M44 60 V30 l6 -10 l6 10 V22 l7 -14 l7 14 l7 -14 l7 14 V30 l6 -10 l6 10 V60Z" fill="${c}" stroke="#1E1230" stroke-width="2.4" stroke-linejoin="round"/><path d="M64 60 v-10 a6 6 0 0 1 12 0 v10" fill="#1E1230"/><circle cx="60" cy="36" r="3" fill="#FFCE3A"/><circle cx="80" cy="36" r="3" fill="#FFCE3A"/>`;
+  return `<svg class="isl-art${small ? ' sm' : ''}" viewBox="0 0 140 92" aria-hidden="true">${s}</svg>`;
+}
+const ICON = {
+  map: '<svg viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z M9 4v14 M15 6v14"/></svg>',
+  book: '<svg viewBox="0 0 24 24"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z M5 17a3 3 0 0 1 3-3h11"/></svg>',
+  dex: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M4 12h16 M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/></svg>',
+  chart: '<svg viewBox="0 0 24 24"><path d="M4 20V10 M10 20V4 M16 20v-7 M22 20H2"/></svg>',
+  shop: '<svg viewBox="0 0 24 24"><path d="M4 9h16l-1 11H5z M8 9V7a4 4 0 0 1 8 0v2"/></svg>',
+  back: '<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
+  sword: '<svg viewBox="0 0 24 24"><path d="M14 4h6v6L9 21l-3-3z M5 15l4 4 M3 21l3-3"/></svg>',
+  staff: '<svg viewBox="0 0 24 24"><path d="M6 21L16 8 M14 4l2 4 4 1-3 3 1 4-4-2-3 2 1-4-3-3 4-1z"/></svg>',
+  bow: '<svg viewBox="0 0 24 24"><path d="M5 3c9 2 14 7 16 16 M5 3L21 19 M5 3l1 6 M5 3l6 1 M14 12l-6 6"/></svg>',
+  heart: '<svg viewBox="0 0 24 24"><path d="M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-3 4.5 4.5 0 0 1 8 3c0 6-8 11-8 11z"/></svg>',
+  coin: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v9 M9.5 10h4 a1.5 1.5 0 0 1 0 3h-3 a1.5 1.5 0 0 0 0 3h4"/></svg>',
+  flame: '<svg viewBox="0 0 24 24"><path d="M12 21a6 6 0 0 1-6-6c0-4 3-5 3-9 3 1 5 4 5 6 1-1 1.5-2 1.5-3 2 2 2.5 4 2.5 6a6 6 0 0 1-6 6z"/></svg>',
+  scroll: '<svg viewBox="0 0 24 24"><path d="M7 4h11v13a3 3 0 0 1-3 3H6a2 2 0 0 1-2-2v-2h11v2a2 2 0 0 0 2 2 M7 4a2 2 0 0 0-2 2v2h2 M10 9h5 M10 12h5"/></svg>',
+  potion: '<svg viewBox="0 0 24 24"><path d="M10 3h4 M10 3v5L5 17a3 3 0 0 0 3 4h8a3 3 0 0 0 3-4l-5-9V3 M7 14h10"/></svg>',
+  feather: '<svg viewBox="0 0 24 24"><path d="M20 4C10 4 6 10 6 18 M6 18l-2 2 M6 18c6 0 11-4 14-14 M9 14h5"/></svg>',
+  star: '<svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>',
+  lock: '<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+  sound: '<svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z M17 8a5 5 0 0 1 0 8"/></svg>',
+  edit: '<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z M13 7l4 4"/></svg>',
+};
+for (const k in ICON) ICON[k] = ICON[k].replace('<svg ', '<svg class="ic" aria-hidden="true" ');
+/* ───────── 상태와 저장 ───────── */
+const LS_KEY = 'mathKingdomRPG.v1';
+const DAILY_GOAL = 15;
+const CLS = {
+  warrior: { n: '전사', atk: '검 베기', icon: 'sword', fx: 'slash' },
+  mage: { n: '마법사', atk: '파이어볼', icon: 'staff', fx: 'burst' },
+  archer: { n: '궁수', atk: '화살 명중', icon: 'bow', fx: 'arrow' },
+};
+const SHOP = [
+  { id: 'hint', name: '힌트 두루마리', price: 10, icon: 'scroll', d: '전투 중 문제의 첫 단서를 보여줘.' },
+  { id: 'potion', name: '회복 물약', price: 20, icon: 'potion', d: '전투 중 하트 1개를 회복해.' },
+  { id: 'feather', name: '황금 깃털', price: 40, icon: 'feather', d: '다음 전투 1번 동안 경험치가 2배!' },
+];
+const DEF = () => ({ v: 1, name: '모험가', cls: 'warrior', lv: 1, xp: 0, gold: 30, items: { hint: 2, potion: 1, feather: 0 }, stars: {}, boss: {}, final: false, stats: {}, wrong: [], dex: {}, streak: { last: '', days: 0 }, daily: { date: '', c: 0, claimed: false }, tot: { s: 0, c: 0 }, sound: true, intro: false, t: 0 });
+function merge(d) { const s = Object.assign(DEF(), d || {}); s.items = Object.assign(DEF().items, s.items || {}); s.streak = Object.assign(DEF().streak, s.streak || {}); s.daily = Object.assign(DEF().daily, s.daily || {}); s.tot = Object.assign(DEF().tot, s.tot || {}); return s; }
+let S = (() => { try { const raw = localStorage.getItem(LS_KEY); if (raw) return merge(JSON.parse(raw)); } catch (e) { /* 저장소 없음 */ } return DEF(); })();
+let remote = null, storeMode = 'local', pushT = null, pushing = false, pushAgain = false;
+function save() {
+  S.t = Date.now();
+  try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch (e) { /* 무시 */ }
+  if (remote) { clearTimeout(pushT); pushT = setTimeout(pushRemote, 1500); }
+}
+async function pushRemote() {
+  if (!remote) return; if (pushing) { pushAgain = true; return; }
+  pushing = true;
+  try { await remote.set(JSON.parse(JSON.stringify(S))); storeMode = 'cloud'; } catch (e) { remote = null; storeMode = 'local'; }
+  pushing = false; if (pushAgain) { pushAgain = false; pushRemote(); }
+}
+async function initRemote() {
+  if (!window.claude || typeof window.claude.use !== 'function') return;
+  try {
+    const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+    if (!db || !user) return;
+    const id = await user.id(); if (!id) return;
+    const ref = db.doc('data/users/' + id + '/progress');
+    let timer; const timeout = new Promise((_, rej) => { timer = setTimeout(() => rej(new Error('timeout')), 10000); });
+    const snap = await Promise.race([ref.get(), timeout]); clearTimeout(timer);
+    remote = ref; storeMode = 'cloud';
+    const d = snap.exists ? snap.data() : null;
+    if (d && (d.t || 0) > (S.t || 0)) { S = merge(d); try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch (e) { /* 무시 */ } if (!B) render(); }
+    else if (S.t) pushRemote();
+    if (view.name === 'records' && !B) render();
+  } catch (e) { remote = null; storeMode = 'local'; }
+}
+
+/* ───────── 소리 ───────── */
+let AC = null;
+function tone(seq) {
+  if (!S.sound) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    let t = AC.currentTime;
+    for (const [f, d, type] of seq) { const o = AC.createOscillator(), g = AC.createGain(); o.type = type || 'triangle'; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.18, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + d); o.connect(g).connect(AC.destination); o.start(t); o.stop(t + d + 0.02); t += d * 0.8; }
+  } catch (e) { /* 소리 없음 */ }
+}
+const SFX = { hit: () => tone([[660, .09], [990, .14]]), crit: () => tone([[660, .07], [990, .07], [1320, .18]]), miss: () => tone([[220, .18, 'sawtooth'], [160, .22, 'sawtooth']]), win: () => tone([[523, .12], [659, .12], [784, .12], [1047, .3]]), lose: () => tone([[392, .2], [330, .2], [262, .35]]), lvl: () => tone([[784, .1], [988, .1], [1175, .1], [1568, .35]]), coin: () => tone([[1200, .06], [1600, .12]]) };
+
+/* ───────── 유틸 ───────── */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const yesterday = () => { const d = new Date(Date.now() - 864e5); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const need = lv => 60 + 40 * lv;
+const title = () => { const c = CLS[S.cls].n, l = S.lv; return l < 5 ? '견습 ' + c : l < 10 ? '초보 ' + c : l < 15 ? '숙련 ' + c : l < 20 ? '베테랑 ' + c : l < 30 ? '영웅 ' + c : '수학 왕국 수호자'; };
+const starsOf = I => I.stages.reduce((a, s) => a + (S.stars[s.id] || 0), 0);
+const allStars = () => ISLANDS.reduce((a, I) => a + starsOf(I), 0);
+const maxStars = () => ISLANDS.reduce((a, I) => a + I.stages.length * 3, 0);
+const bossOpen = I => I.stages.every(s => (S.stars[s.id] || 0) >= 1);
+const finalOpen = () => ISLANDS.every(I => S.boss[I.id]);
+const acc = st => st && st.c + st.w ? Math.round(st.c / (st.c + st.w) * 100) : null;
+const islStat = I => I.stages.reduce((a, s) => { const st = S.stats[s.id]; if (st) { a.c += st.c; a.w += st.w; } return a; }, { c: 0, w: 0 });
+function decOf(q) { let k = 0; while (k <= 3 && (Math.pow(10, k) % q.d)) k++; if (k > 3) return null; const n = Math.abs(q.n) * (Math.pow(10, k) / q.d); const s = String(n).padStart(k + 1, '0'); return (q.n < 0 ? MI : '') + (k ? s.slice(0, -k) + '.' + s.slice(-k) : s); }
+function ansHTML(q) {
+  if (q.kind === 'choice') return q.opts[q.ci];
+  const d = q.ans.d === 1 ? null : decOf(q.ans);
+  const main = d && [10, 100, 1000].includes(q.ans.d) ? d : qh(q.ans) + (d ? ` <small>(= ${d})</small>` : '');
+  return `${q.pre ? q.pre + ' ' : ''}${M(main)}${q.unit ? ' ' + q.unit : ''}`;
+}
+function parseAns(s) {
+  s = (s || '').trim(); if (!s) return null; let m;
+  if ((m = s.match(/^(-?)(\d+)\/(\d+)$/))) { if (+m[3] === 0) return null; return { q: Q((m[1] ? -1 : 1) * +m[2], +m[3]), raw: [+m[2], +m[3]] }; }
+  if ((m = s.match(/^(-?)(\d*)\.?(\d*)$/))) { if (!m[2] && !m[3]) return null; const ip_ = m[2] || '0', fp = m[3] || ''; const d = Math.pow(10, fp.length); return { q: Q((m[1] ? -1 : 1) * (+ip_ * d + (+fp || 0)), d) }; }
+  return null;
+}
+function inputHTML(s) {
+  if (!s) return '<span class="ph">?</span>';
+  const m = s.match(/^(-?)(\d*)\/(\d*)$/);
+  const t = x => x.replace(/-/g, MI);
+  if (m) return `${m[1] ? MI : ''}${fr(m[2] || '&nbsp;', m[3] || '&nbsp;')}`;
+  return t(s);
+}
+function toast(msg, kind) { const el = document.createElement('div'); el.className = 'toast' + (kind ? ' ' + kind : ''); el.innerHTML = msg; $('#toasts').appendChild(el); setTimeout(() => el.classList.add('out'), 2200); setTimeout(() => el.remove(), 2700); }
+
+/* ───────── 보상 ───────── */
+function gainXP(n) {
+  S.xp += n; let up = false;
+  while (S.xp >= need(S.lv)) { S.xp -= need(S.lv); S.lv++; S.items.hint++; up = true; }
+  if (up) { SFX.lvl(); toast(`<b>레벨 업! Lv.${S.lv}</b> 힌트 두루마리 1개를 받았어`, 'gold'); }
+}
+function markDaily() {
+  const t = today();
+  if (S.daily.date !== t) S.daily = { date: t, c: 0, claimed: false };
+  S.daily.c++;
+  if (S.streak.last !== t) { S.streak.days = S.streak.last === yesterday() ? S.streak.days + 1 : 1; S.streak.last = t; }
+}
+
+/* ───────── 화면 ───────── */
+let view = { name: 'map' };
+let B = null; // 전투 상태
+let sheet = null; // 모달
+
+function hud() {
+  const pct = Math.round(S.xp / need(S.lv) * 100);
+  const streakOn = S.streak.last === today() || S.streak.last === yesterday();
+  return `<header class="hud"><div class="hud-in">
+    <button class="avatar" data-act="profile" aria-label="이름과 직업 바꾸기">${ICON[CLS[S.cls].icon]}</button>
+    <div class="who"><div class="nm">${esc(S.name)} <span class="lv">Lv.${S.lv}</span></div><div class="ttl">${title()}</div>
+      <div class="xpbar" title="경험치 ${S.xp}/${need(S.lv)}"><i style="width:${pct}%"></i></div></div>
+    <div class="res"><span class="chip gold">${ICON.coin}<b>${S.gold}</b></span><span class="chip ${streakOn ? 'fire' : ''}">${ICON.flame}<b>${streakOn ? S.streak.days : 0}</b>일</span></div>
+  </div></header>`;
+}
+function nav() {
+  const items = [['map', '지도', 'map'], ['notebook', '오답노트', 'book'], ['dex', '도감', 'dex'], ['records', '기록', 'chart'], ['shop', '상점', 'shop']];
+  const cur = view.name === 'island' ? 'map' : view.name;
+  return `<nav class="nav">${items.map(([k, l, ic]) => `<button data-act="go" data-v="${k}" class="${cur === k ? 'on' : ''}">${ICON[ic]}<span>${l}${k === 'notebook' && S.wrong.length ? `<em>${S.wrong.length}</em>` : ''}</span></button>`).join('')}</nav>`;
+}
+function render() {
+  const app = $('#app');
+  if (B) { app.innerHTML = battleHTML(); afterBattleRender(); return; }
+  let body = '';
+  if (view.name === 'map') body = mapView();
+  else if (view.name === 'island') body = islandView(ISL[view.id]);
+  else if (view.name === 'notebook') body = notebookView();
+  else if (view.name === 'dex') body = dexView();
+  else if (view.name === 'records') body = recordsView();
+  else if (view.name === 'shop') body = shopView();
+  app.innerHTML = hud() + `<main class="page">${body}</main>` + nav() + (sheet ? sheetHTML() : '');
+}
+
+function mapView() {
+  const t = today(); const dc = S.daily.date === t ? S.daily.c : 0; const claimed = S.daily.date === t && S.daily.claimed;
+  let h = '';
+  if (!S.intro) h += `<section class="card intro"><h2>수학 왕국에 온 걸 환영해!</h2><p>섬마다 중1 수학 단원의 몬스터가 살고 있어. 문제를 맞히면 공격하고, 틀리면 하트가 줄어. 틀린 문제는 오답노트에 모이고, 두 번 맞히면 졸업이야.</p><div class="row"><button class="btn" data-act="profile">이름·직업 정하기</button><button class="btn ghost" data-act="intro-ok">바로 시작</button></div></section>`;
+  h += `<section class="card quest"><div class="q-top"><div><div class="eyebrow">오늘의 퀘스트</div><b>문제 ${DAILY_GOAL}개 맞히기</b></div>${claimed ? '<span class="pill done">보상 받음</span>' : dc >= DAILY_GOAL ? `<button class="btn sm" data-act="claim">${ICON.coin} 30 받기</button>` : `<span class="pill">${ICON.coin} 30</span>`}</div><div class="bar"><i style="width:${Math.min(100, dc / DAILY_GOAL * 100)}%"></i></div><div class="q-num">${Math.min(dc, DAILY_GOAL)} / ${DAILY_GOAL}</div></section>`;
+  const node = (I, i) => { const st = starsOf(I), mx = I.stages.length * 3; const ss = islStat(I);
+    return `<button class="isl ${i % 2 ? 'r' : 'l'}" data-act="island" data-id="${I.id}" style="--isl:${I.color}">${islandArt(I)}<span class="isl-txt"><span class="isl-no">${I.no}</span><span class="isl-nm">${I.name}</span><span class="isl-unit">${I.unit}</span><span class="isl-meta"><span class="st">${ICON.star}${st}/${mx}</span>${S.boss[I.id] ? '<span class="crown">보스 격파</span>' : ''}${ss.c + ss.w ? `<span class="ac">정답률 ${acc(ss)}%</span>` : ''}</span></span></button>`; };
+  h += `<div class="chart"><div class="sea-lbl">1학기 바다</div>${ISLANDS.filter(I => I.sem === 1).map(node).join('')}<div class="sea-lbl">2학기 바다</div>${ISLANDS.filter(I => I.sem === 2).map((I, i) => node(I, i + 1)).join('')}`;
+  const fo = finalOpen();
+  h += `<div class="sea-lbl">마지막 해역</div><button class="isl final ${fo ? '' : 'locked'}" data-act="final" style="--isl:${FINAL.color}">${islandArt({ id: 'final', color: FINAL.color, art: 'final' })}<span class="isl-txt"><span class="isl-nm">${FINAL.name}</span><span class="isl-unit">${fo ? (S.final ? '마왕 격파! 다시 도전할 수 있어' : '모든 단원이 섞인 최종 결전') : `9개 섬의 보스를 모두 물리치면 열려 · ${Object.keys(S.boss).length}/9`}</span></span></button></div>`;
+  return h;
+}
+
+function islandView(I) {
+  const st = starsOf(I), mx = I.stages.length * 3; const bo = bossOpen(I);
+  let h = `<section class="isl-head" style="--isl:${I.color}"><button class="icon-btn" data-act="go" data-v="map" aria-label="지도로">${ICON.back}</button>${islandArt(I, true)}<div><div class="eyebrow">${I.no}단원 · ${I.sem}학기</div><h1>${I.name}</h1><div class="sub">${I.unit} · ${ICON.star}${st}/${mx}</div></div></section>`;
+  h += '<div class="stages">';
+  I.stages.forEach((s, i) => { const n = S.stars[s.id] || 0, a = acc(S.stats[s.id]);
+    h += `<button class="stage" data-act="brief" data-id="${s.id}" style="--isl:${I.color}"><span class="s-mon">${monsterSVG(s.id, monColor(s.id))}</span><span class="s-txt"><span class="s-no">스테이지 ${i + 1}</span><span class="s-nm">${s.name}</span><span class="s-mn">${s.mon}${a !== null ? ` · 정답률 ${a}%` : ''}</span></span><span class="s-st">${[0, 1, 2].map(k => `<i class="${k < n ? 'on' : ''}">${ICON.star}</i>`).join('')}</span></button>`; });
+  const done = I.stages.filter(s => (S.stars[s.id] || 0) >= 1).length;
+  h += `<button class="stage boss ${bo ? '' : 'locked'}" data-act="boss" data-id="${I.id}" style="--isl:${I.color}"><span class="s-mon">${monsterSVG(I.id + '-boss', I.color, { boss: 1, sil: !bo })}</span><span class="s-txt"><span class="s-no">보스전 · 단원 평가</span><span class="s-nm">${I.boss}</span><span class="s-mn">${bo ? (S.boss[I.id] ? '격파 완료 · 다시 도전 가능' : '모든 스테이지가 섞여서 나와') : `모든 스테이지를 별 1개 이상으로 깨면 열려 (${done}/${I.stages.length})`}</span></span>${bo ? '' : `<span class="s-lock">${ICON.lock}</span>`}</button>`;
+  return h + '</div>';
+}
+
+function notebookView() {
+  let h = `<section class="pg-head"><h1>오답노트</h1><p>틀린 문제가 여기 모여. 복습 전투에서 비슷한 문제를 <b>두 번</b> 맞히면 졸업이야.</p>${S.wrong.length ? `<button class="btn" data-act="review">${ICON.sword} 복습 전투 시작 (${Math.min(8, S.wrong.length)}문제)</button>` : ''}</section>`;
+  if (!S.wrong.length) return h + `<section class="card empty"><div class="em-art">${monsterSVG('empty-note', '#7E9AA8', { ghost: 1 })}</div><b>아직 틀린 문제가 없어</b><p>전투에서 틀린 문제는 자동으로 여기에 저장돼. 지도로 가서 첫 전투를 시작해 봐!</p><button class="btn ghost" data-act="go" data-v="map">지도로 가기</button></section>`;
+  h += '<div class="notes">';
+  S.wrong.slice().reverse().forEach(w => { const s = STAGE[w.sid]; if (!s) return; const d = new Date(w.t);
+    h += `<article class="note" style="--isl:${s.isl.color}"><div class="n-top"><span class="tag">${s.isl.no} ${s.name}</span><span class="n-date">${d.getMonth() + 1}/${d.getDate()}</span><span class="fix">${[0, 1].map(k => `<i class="${k < w.fix ? 'on' : ''}"></i>`).join('')}</span></div>
+      <div class="n-q">${w.q.p}</div>${w.q.fig ? `<div class="fig-wrap">${w.q.fig}</div>` : ''}
+      <div class="n-ans"><div><span class="lbl bad">내 답</span>${w.my}</div><div><span class="lbl good">정답</span>${w.ans}</div></div>
+      <details><summary>풀이 보기</summary><ol class="steps">${w.q.steps.map(x => `<li>${x}</li>`).join('')}</ol></details></article>`; });
+  return h + '</div>';
+}
+
+function dexView() {
+  const list = [];
+  ISLANDS.forEach(I => { I.stages.forEach(s => list.push({ k: s.id, nm: s.mon, sub: s.name, c: monColor(s.id), got: S.dex[s.id] })); list.push({ k: I.id + '-boss', nm: I.boss, sub: I.name + ' 보스', c: I.color, got: S.boss[I.id], boss: 1 }); });
+  list.push({ k: 'final-boss', nm: FINAL.boss, sub: '최종 보스', c: FINAL.color, got: S.final, boss: 1 });
+  const got = list.filter(x => x.got).length;
+  return `<section class="pg-head"><h1>몬스터 도감</h1><p>물리친 몬스터가 도감에 기록돼. <b>${got} / ${list.length}</b> 발견</p><div class="bar"><i style="width:${got / list.length * 100}%"></i></div></section><div class="dex">${list.map(x => `<div class="dx ${x.got ? '' : 'no'}" style="--isl:${x.c}">${monsterSVG(x.k, x.c, { boss: x.boss, sil: !x.got })}<b>${x.got ? x.nm : '???'}</b><span>${x.sub}</span></div>`).join('')}</div>`;
+}
+
+function recordsView() {
+  const a = S.tot.s ? Math.round(S.tot.c / S.tot.s * 100) : 0;
+  let h = `<section class="pg-head"><h1>학습 기록</h1><p>보호자와 함께 보는 페이지야. 단원별 정답률로 약한 곳을 찾아봐.</p></section>`;
+  h += `<div class="tiles"><div class="tile"><span>푼 문제</span><b>${S.tot.s}</b></div><div class="tile"><span>정답률</span><b>${S.tot.s ? a + '%' : '–'}</b></div><div class="tile"><span>연속 학습</span><b>${S.streak.last === today() || S.streak.last === yesterday() ? S.streak.days : 0}일</b></div><div class="tile"><span>모은 별</span><b>${allStars()}<small>/${maxStars()}</small></b></div></div>`;
+  h += `<section class="card"><h2>단원별 정답률</h2><div class="bars">${ISLANDS.map(I => { const ss = islStat(I), p = acc(ss); return `<div class="br" style="--isl:${I.color}"><span class="b-nm">${I.no} ${I.unit}</span><span class="b-v">${p === null ? '<span class="muted">아직 없음</span>' : p + '% <small>(' + (ss.c + ss.w) + '문제)</small>'}</span><span class="b-track"><i style="width:${p || 0}%"></i></span></div>`; }).join('')}</div></section>`;
+  const weak = Object.keys(S.stats).filter(k => STAGE[k] && S.stats[k].c + S.stats[k].w >= 5).map(k => ({ k, p: acc(S.stats[k]) })).filter(x => x.p < 80).sort((x, y) => x.p - y.p).slice(0, 3);
+  h += `<section class="card"><h2>더 연습하면 좋은 곳</h2>${weak.length ? `<div class="weak">${weak.map(x => { const s = STAGE[x.k]; return `<div class="wk" style="--isl:${s.isl.color}"><div><b>${s.name}</b><span>${s.isl.unit} · 정답률 ${x.p}%</span></div><button class="btn sm" data-act="brief" data-id="${x.k}">연습하기</button></div>`; }).join('')}</div>` : `<p class="muted">한 스테이지에서 5문제 이상 풀면, 정답률이 80% 미만인 곳을 여기서 알려줘.</p>`}</section>`;
+  h += `<section class="card set"><h2>설정</h2><div class="set-row"><span>모험가</span><button class="btn ghost sm" data-act="profile">${ICON.edit} ${esc(S.name)} · ${CLS[S.cls].n}</button></div><div class="set-row"><span>효과음</span><button class="btn ghost sm" data-act="sound">${ICON.sound} ${S.sound ? '켜짐' : '꺼짐'}</button></div><div class="set-row"><span>저장 위치</span><span class="muted">${storeMode === 'cloud' ? 'claude.ai 계정 (다른 기기에서도 이어 하기)' : '이 기기의 브라우저'}</span></div><div class="set-row"><span>처음부터 다시</span>${view.reset ? `<span class="row"><button class="btn danger sm" data-act="reset-yes">정말 지우기</button><button class="btn ghost sm" data-act="reset-no">취소</button></span>` : `<button class="btn ghost sm" data-act="reset">기록 초기화</button>`}</div></section>`;
+  return h;
+}
+
+function shopView() {
+  return `<section class="pg-head"><h1>상점</h1><p>전투에서 모은 골드로 아이템을 살 수 있어. 지금 가진 골드: <b class="gold-t">${ICON.coin}${S.gold}</b></p></section><div class="shop">${SHOP.map(it => `<div class="item"><span class="it-ic">${ICON[it.icon]}</span><div class="it-txt"><b>${it.name}</b><span>${it.d}</span><span class="own">가진 개수: ${S.items[it.id] || 0}</span></div><button class="btn sm" data-act="buy" data-id="${it.id}" ${S.gold < it.price ? 'disabled' : ''}>${ICON.coin}${it.price}</button></div>`).join('')}</div><p class="muted center">골드 얻는 법: 정답 +3 (콤보 3 이상이면 +5), 스테이지 클리어 별 1개당 +10, 처음 별 3개 +20, 보스 처음 격파 +60, 오늘의 퀘스트 +30</p>`;
+}
+
+function sheetHTML() {
+  if (sheet.type === 'brief') { const s = STAGE[sheet.id];
+    return `<div class="scrim" data-act="close"></div><div class="sheet" role="dialog" aria-label="작전 회의" style="--isl:${s.isl.color}"><div class="sh-top">${monsterSVG(s.id, monColor(s.id))}<div><div class="eyebrow">작전 회의 · ${s.isl.name}</div><h2>${s.name}</h2><div class="sub">상대: ${s.mon}</div></div></div><div class="concept">${s.c}</div><div class="row"><button class="btn big" data-act="fight" data-id="${s.id}">${ICON[CLS[S.cls].icon]} 전투 시작!</button><button class="btn ghost" data-act="close">닫기</button></div></div>`; }
+  if (sheet.type === 'profile') {
+    return `<div class="scrim" data-act="close"></div><div class="sheet" role="dialog" aria-label="모험가 정보"><h2>모험가 정보</h2><label class="fld"><span>이름</span><input id="pf-name" maxlength="10" value="${esc(S.name)}" autocomplete="off"></label><div class="fld"><span>직업</span><div class="classes">${Object.entries(CLS).map(([k, c]) => `<button class="cls ${sheet.cls === k ? 'on' : ''}" data-act="pick-cls" data-id="${k}">${ICON[c.icon]}<b>${c.n}</b><span>${c.atk}</span></button>`).join('')}</div></div><div class="row"><button class="btn big" data-act="save-profile">저장</button><button class="btn ghost" data-act="close">취소</button></div></div>`;
+  }
+  return '';
+}
+
+/* ───────── 전투 ───────── */
+function pickQ() {
+  let sid, v = null;
+  if (B.mode === 'stage') sid = B.sid;
+  else if (B.mode === 'boss') sid = pick(ISL[B.isl].stages).id;
+  else if (B.mode === 'final') sid = pick(pick(ISLANDS).stages).id;
+  else if (B.mode === 'review') { const w = B.queue[B.qi % B.queue.length]; sid = w.sid; v = w.v; B.curW = w.k; }
+  const G = STAGE[sid].isl.G[sid];
+  let q, tries = 0;
+  do {
+    const vi = v !== null && G[v] ? v : Math.floor(Math.random() * G.length);
+    if (v === null && G.length > 1 && vi === B.lastV && tries < 3) { tries++; continue; }
+    q = G[vi](); q.sid = sid; q.v = vi; tries++;
+  } while ((!q || B.seen.has(q.p)) && tries < 8);
+  B.seen.add(q.p); B.lastV = q.v;
+  return q;
+}
+function startBattle(mode, id) {
+  sheet = null;
+  const dmg = 20;
+  if (mode === 'stage') { const s = STAGE[id]; B = { mode, sid: id, isl: s.isl.id, name: s.mon, sub: s.name, color: monColor(id), key: s.id, maxHp: 100 }; }
+  if (mode === 'boss') { const I = ISL[id]; B = { mode, isl: id, name: I.boss, sub: I.name + ' 보스', color: I.color, key: I.id + '-boss', boss: 1, maxHp: 160 }; }
+  if (mode === 'final') { B = { mode, name: FINAL.boss, sub: '최종 결전', color: FINAL.color, key: 'final-boss', boss: 1, maxHp: 240 }; }
+  if (mode === 'review') { const queue = S.wrong.slice(-8).map(w => ({ k: w.k, sid: w.sid, v: w.v })); B = { mode, queue, name: '부활한 오답 몬스터', sub: '복습 전투', color: '#6E8796', key: 'review-ghost', ghost: 1, maxHp: queue.length * dmg }; }
+  Object.assign(B, { hp: B.maxHp, hearts: 3, combo: 0, best: 0, wrongs: 0, qi: 0, seen: new Set(), lastV: -1, inp: '', phase: 'ask', xp: 0, gold: 0, feather: false, hintShown: false, nRight: 0 });
+  if (S.items.feather > 0 && mode !== 'review') { S.items.feather--; B.feather = true; save(); }
+  B.q = pickQ();
+  render(); window.scrollTo(0, 0);
+}
+function battleHTML() {
+  const q = B.q; const hpP = Math.max(0, B.hp / B.maxHp * 100);
+  let h = `<div class="battle" style="--isl:${B.color}">
+  <div class="bt-top"><button class="icon-btn" data-act="flee" aria-label="후퇴">${ICON.back}</button><div class="bt-name"><b>${B.name}</b><span>${B.sub}</span></div><div class="hearts" aria-label="하트 ${B.hearts}개">${[0, 1, 2].map(i => `<i class="${i < B.hearts ? 'on' : ''}">${ICON.heart}</i>`).join('')}</div></div>
+  <div class="hp"><i style="width:${hpP}%"></i><span>HP ${Math.max(0, B.hp)} / ${B.maxHp}</span></div>
+  <div class="arena" id="arena"><div class="mon-wrap" id="mon">${monsterSVG(B.key, B.color, { boss: B.boss, ghost: B.ghost })}</div><div id="fx"></div>${B.combo >= 2 ? `<div class="combo">콤보 ×${B.combo}</div>` : ''}${B.feather ? '<div class="buff">XP ×2</div>' : ''}</div>`;
+  if (B.phase === 'end') return h + endHTML() + '</div>';
+  h += `<section class="qcard"><div class="q-meta"><span>문제 ${B.qi + 1}</span><span class="tag">${STAGE[q.sid].name}</span></div><div class="q-p">${q.p}</div>${q.fig ? `<div class="fig-wrap">${q.fig}</div>` : ''}${B.hintShown ? `<div class="hintbox">${ICON.scroll}<span>${q.hint}</span></div>` : ''}</section>`;
+  if (B.phase === 'ask') {
+    if (q.kind === 'choice') h += `<div class="choices">${q.opts.map((o, i) => `<button class="ch" data-act="choose" data-i="${i}"><span class="ci">${'①②③④⑤'[i]}</span><span class="co">${o}</span></button>`).join('')}</div>`;
+    else h += `<div class="ansline">${q.pre ? `<span class="pre">${q.pre}</span>` : ''}<span class="inbox" id="inbox">${inputHTML(B.inp)}</span>${q.unit ? `<span class="unit">${q.unit}</span>` : ''}</div>
+      <div class="pad">${['7', '8', '9', 'del', '4', '5', '6', '-', '1', '2', '3', '/', '0', '.', 'ok'].map(k => k === 'del' ? `<button data-act="key" data-k="del" aria-label="지우기">⌫</button>` : k === 'ok' ? `<button class="ok" data-act="submit">공격!</button>` : k === '-' ? `<button data-act="key" data-k="-" aria-label="음수 부호">${MI}</button>` : k === '/' ? `<button data-act="key" data-k="/" aria-label="분수">${fr('□', '□')}</button>` : `<button data-act="key" data-k="${k}">${k}</button>`).join('')}</div>`;
+    h += `<div class="tools"><button class="tool" data-act="hint" ${S.items.hint && !B.hintShown ? '' : 'disabled'}>${ICON.scroll}힌트 <b>${S.items.hint}</b></button><button class="tool" data-act="potion" ${S.items.potion && B.hearts < 3 ? '' : 'disabled'}>${ICON.potion}물약 <b>${S.items.potion}</b></button></div>`;
+  } else if (B.phase === 'fb') {
+    const ok = B.last.ok;
+    if (q.kind === 'choice') h += `<div class="choices done">${q.opts.map((o, i) => `<div class="ch ${i === q.ci ? 'right' : i === B.last.pick ? 'wrong' : ''}"><span class="ci">${'①②③④⑤'[i]}</span><span class="co">${o}</span></div>`).join('')}</div>`;
+    h += `<section class="fb ${ok ? 'good' : 'bad'}"><div class="fb-h">${ok ? `<b>${B.last.crit ? '치명타!' : '명중!'}</b> ${CLS[S.cls].atk} ${MI}${B.last.dmg}` : '<b>앗, 반격당했어!</b> 하트 1개를 잃었어'}</div>
+      ${q.kind === 'num' ? `<div class="fb-a">${ok ? '' : `<span class="lbl bad">내 답</span>${B.last.myHTML}<br>`}<span class="lbl good">정답</span>${ansHTML(q)}</div>` : ''}
+      ${B.last.note ? `<div class="fb-note">${B.last.note}</div>` : ''}
+      ${ok && !B.showSteps ? `<button class="link" data-act="steps">풀이 보기</button>` : `<ol class="steps">${dedupe(q.steps).map(x => `<li>${x}</li>`).join('')}</ol>`}
+      <button class="btn big" data-act="next">${B.hp <= 0 || B.hearts <= 0 ? '결과 보기' : '다음 문제'}</button></section>`;
+  }
+  return h + '</div>';
+}
+function dedupe(a) { return a.filter((x, i) => x && x !== a[i - 1]); }
+function endHTML() {
+  const win = B.result === 'win';
+  const st = B.stars || 0;
+  return `<section class="end ${win ? 'win' : 'lose'}"><h2>${win ? (B.mode === 'review' ? '복습 완료!' : '승리!') : '후퇴…'}</h2>
+    ${win && B.mode === 'stage' ? `<div class="big-stars">${[0, 1, 2].map(k => `<i class="${k < st ? 'on' : ''}" style="animation-delay:${k * 0.18}s">${ICON.star}</i>`).join('')}</div>` : ''}
+    <p>${win ? (B.mode === 'review' ? `오답 몬스터를 물리쳤어. ${B.grad ? `<b>${B.grad}문제</b>가 오답노트에서 졸업했어!` : '한 번 더 맞히면 졸업이야.'}` : `<b>${B.name}</b> 격파! 틀린 문제 ${B.wrongs}개 · 최고 콤보 ${B.best}`) : `하트를 모두 잃었어. 틀린 문제는 오답노트에 저장됐어. 개념을 한 번 보고 다시 도전해 봐!`}</p>
+    <div class="gain"><span>${ICON.star} 경험치 +${B.xp}</span><span class="gold-t">${ICON.coin} 골드 +${B.gold}</span></div>
+    <div class="row col">${win ? '' : B.mode === 'stage' ? `<button class="btn big" data-act="brief-again">개념 보고 다시 도전</button>` : ''}<button class="btn ${win ? 'big' : 'ghost'}" data-act="again">${win ? '한 번 더' : '바로 다시 도전'}</button><button class="btn ghost" data-act="leave">${B.mode === 'review' ? '오답노트로' : B.mode === 'final' ? '지도로' : '섬으로 돌아가기'}</button></div></section>`;
+}
+function afterBattleRender() {
+  const ib = $('#inbox'); if (ib) ib.classList.toggle('empty', !B.inp);
+}
+function fx(kind, text, crit) {
+  const box = $('#fx'), mon = $('#mon'); if (!box || !mon) return;
+  if (kind === 'hit') {
+    const e = document.createElement('div'); e.className = 'fx ' + CLS[S.cls].fx; box.appendChild(e);
+    const n = document.createElement('div'); n.className = 'dmg' + (crit ? ' crit' : ''); n.textContent = text; box.appendChild(n);
+    mon.classList.remove('hurt'); void mon.offsetWidth; mon.classList.add('hurt');
+  } else {
+    mon.classList.remove('lunge'); void mon.offsetWidth; mon.classList.add('lunge');
+    const ar = $('#arena'); ar.classList.remove('shake'); void ar.offsetWidth; ar.classList.add('shake');
+  }
+}
+function answer(ok, myHTML, pickI, note) {
+  const q = B.q; S.tot.s++;
+  const st = S.stats[q.sid] = S.stats[q.sid] || { c: 0, w: 0 };
+  B.last = { ok, myHTML, pick: pickI, note };
+  if (ok) {
+    st.c++; S.tot.c++; B.nRight++; markDaily();
+    B.combo++; B.best = Math.max(B.best, B.combo);
+    const crit = B.combo >= 3 && B.mode !== 'review'; const dmg = crit ? 30 : 20;
+    B.hp -= dmg; B.last.dmg = dmg; B.last.crit = crit;
+    const xp = (10 + 2 * Math.min(B.combo, 5)) * (B.feather ? 2 : 1); const g = crit ? 5 : 3;
+    B.xp += xp; B.gold += g; S.gold += g; gainXP(xp);
+    if (B.mode === 'review') { const w = S.wrong.find(x => x.k === B.curW); if (w) { w.fix++; if (w.fix >= 2) { S.wrong = S.wrong.filter(x => x !== w); B.grad = (B.grad || 0) + 1; } } }
+    crit ? SFX.crit() : SFX.hit();
+  } else {
+    st.w++; B.combo = 0; B.hearts--; B.wrongs++;
+    if (B.mode !== 'review') {
+      S.wrong.push({ k: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), sid: q.sid, v: q.v, q: { p: q.p, fig: q.fig || '', steps: dedupe(q.steps) }, my: myHTML, ans: ansHTML(q), t: Date.now(), fix: 0 });
+      if (S.wrong.length > 40) S.wrong = S.wrong.slice(-40);
+    }
+    SFX.miss();
+  }
+  B.phase = 'fb'; B.showSteps = !ok; save(); render();
+  if (ok) fx('hit', MI + B.last.dmg, B.last.crit); else fx('miss');
+  if (ok) { clearTimeout(B.autoT); B.autoT = setTimeout(() => { if (B && B.phase === 'fb' && !B.showSteps) next(); }, 1500); }
+}
+function next() {
+  clearTimeout(B.autoT);
+  if (B.hp <= 0) return finish('win');
+  if (B.hearts <= 0) return finish('lose');
+  B.qi++; B.inp = ''; B.hintShown = false; B.phase = 'ask'; B.showSteps = false;
+  B.q = pickQ(); render();
+  const qc = document.querySelector('.qcard'); if (qc && qc.getBoundingClientRect().top < 0) qc.scrollIntoView({ block: 'start' });
+}
+function finish(res) {
+  B.result = res; B.phase = 'end';
+  if (res === 'win') {
+    SFX.win();
+    if (B.mode === 'stage') {
+      const stars = B.wrongs === 0 ? 3 : B.wrongs === 1 ? 2 : 1; B.stars = stars;
+      const prev = S.stars[B.sid] || 0; S.stars[B.sid] = Math.max(prev, stars); S.dex[B.sid] = true;
+      let g = 10 * stars + (stars === 3 && prev < 3 ? 20 : 0); const xp = 20 * stars * (B.feather ? 2 : 1);
+      B.gold += g; S.gold += g; B.xp += xp; gainXP(xp);
+    } else if (B.mode === 'boss') {
+      const first = !S.boss[B.isl]; S.boss[B.isl] = true; const g = first ? 60 : 20, xp = (first ? 150 : 60) * (B.feather ? 2 : 1);
+      B.gold += g; S.gold += g; B.xp += xp; gainXP(xp);
+      if (first) toast(`<b>${ISL[B.isl].name} 정복!</b> 보스가 도감에 등록됐어`, 'gold');
+    } else if (B.mode === 'final') {
+      const first = !S.final; S.final = true; const g = first ? 150 : 40, xp = (first ? 300 : 100) * (B.feather ? 2 : 1);
+      B.gold += g; S.gold += g; B.xp += xp; gainXP(xp);
+    } else if (B.mode === 'review') { const g = 15; B.gold += g; S.gold += g; }
+  } else SFX.lose();
+  save(); render(); window.scrollTo(0, 0);
+}
+function leaveBattle() {
+  const back = B.mode === 'review' ? { name: 'notebook' } : B.mode === 'final' ? { name: 'map' } : { name: 'island', id: B.isl };
+  clearTimeout(B.autoT); B = null; view = back; render(); window.scrollTo(0, 0);
+}
+function submitNum() {
+  if (!B || B.phase !== 'ask' || B.q.kind !== 'num') return;
+  const p = parseAns(B.inp);
+  if (!p) { const ib = $('#inbox'); if (ib) { ib.classList.remove('nudge'); void ib.offsetWidth; ib.classList.add('nudge'); } return; }
+  const ok = qeq(p.q, B.q.ans);
+  let note = '';
+  if (ok && p.raw && gcd(p.raw[0], p.raw[1]) > 1) note = `정답! 그런데 기약분수로 쓰면 ${M(qh(B.q.ans))}이야. 시험에서는 기약분수로 쓰자.`;
+  answer(ok, `${B.q.pre ? B.q.pre + ' ' : ''}${M(inputHTML(B.inp))}${B.q.unit ? ' ' + B.q.unit : ''}`, null, note);
+}
+function keyIn(k) {
+  if (!B || B.phase !== 'ask' || B.q.kind !== 'num') return;
+  let s = B.inp;
+  if (k === 'del') s = s.slice(0, -1);
+  else if (k === '-') { s = s.startsWith('-') ? s.slice(1) : '-' + s; }
+  else if (k === '/') { if (!s.includes('/') && !s.includes('.') && /\d$/.test(s)) s += '/'; }
+  else if (k === '.') { const part = s.split('/').pop(); if (!s.includes('/') && !part.includes('.')) s += (/\d$/.test(s) ? '' : '0') + '.'; }
+  else if (/^\d$/.test(k)) { if (s.replace(/[^\d]/g, '').length < 9) s += k; }
+  B.inp = s; const ib = $('#inbox'); if (ib) { ib.innerHTML = inputHTML(s); ib.classList.toggle('empty', !s); }
+}
+
+/* ───────── 이벤트 ───────── */
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]'); if (!el || el.disabled) return;
+  const a = el.dataset.act, id = el.dataset.id;
+  const A = {
+    go: () => { view = { name: el.dataset.v }; sheet = null; render(); window.scrollTo(0, 0); },
+    island: () => { view = { name: 'island', id }; render(); window.scrollTo(0, 0); },
+    brief: () => { sheet = { type: 'brief', id }; render(); },
+    close: () => { sheet = null; render(); },
+    fight: () => startBattle('stage', id),
+    boss: () => { if (bossOpen(ISL[id])) startBattle('boss', id); else toast('스테이지를 모두 별 1개 이상으로 깨면 보스가 나타나.'); },
+    final: () => { if (finalOpen()) startBattle('final'); else toast(`9개 섬의 보스를 모두 물리치면 열려 (${Object.keys(S.boss).length}/9)`); },
+    review: () => startBattle('review'),
+    'intro-ok': () => { S.intro = true; save(); render(); },
+    claim: () => { if (S.daily.date === today() && S.daily.c >= DAILY_GOAL && !S.daily.claimed) { S.daily.claimed = true; S.gold += 30; SFX.coin(); toast('<b>퀘스트 완료!</b> 골드 30을 받았어', 'gold'); save(); render(); } },
+    profile: () => { sheet = { type: 'profile', cls: S.cls }; render(); setTimeout(() => { const i = $('#pf-name'); if (i) i.focus(); }, 30); },
+    'pick-cls': () => { const nm = $('#pf-name') ? $('#pf-name').value : S.name; sheet.cls = id; render(); const i = $('#pf-name'); if (i) i.value = nm; },
+    'save-profile': () => { const nm = ($('#pf-name').value || '').trim().slice(0, 10); S.name = nm || '모험가'; S.cls = sheet.cls; S.intro = true; sheet = null; save(); render(); toast(`<b>${esc(S.name)}</b> ${CLS[S.cls].n}, 출발!`); },
+    sound: () => { S.sound = !S.sound; save(); render(); if (S.sound) SFX.coin(); },
+    reset: () => { view.reset = true; render(); },
+    'reset-no': () => { view.reset = false; render(); },
+    'reset-yes': () => { const keep = { name: S.name, cls: S.cls, sound: S.sound }; S = Object.assign(DEF(), keep, { intro: true }); view = { name: 'records' }; save(); render(); toast('기록을 처음부터 다시 시작해.'); },
+    buy: () => { const it = SHOP.find(x => x.id === id); if (S.gold >= it.price) { S.gold -= it.price; S.items[id] = (S.items[id] || 0) + 1; SFX.coin(); save(); render(); toast(`<b>${it.name}</b> 구입!`); } },
+    choose: () => { if (B.phase !== 'ask') return; const i = +el.dataset.i; answer(i === B.q.ci, B.q.opts[i], i); },
+    key: () => keyIn(el.dataset.k),
+    submit: () => submitNum(),
+    hint: () => { if (S.items.hint > 0 && !B.hintShown) { S.items.hint--; B.hintShown = true; save(); render(); } },
+    potion: () => { if (S.items.potion > 0 && B.hearts < 3) { S.items.potion--; B.hearts++; save(); render(); toast('하트 1개 회복!'); } },
+    steps: () => { clearTimeout(B.autoT); B.showSteps = true; render(); },
+    next: () => next(),
+    flee: () => { if (B.phase === 'end' || confirmFlee) { confirmFlee = false; leaveBattle(); } else { confirmFlee = true; toast('한 번 더 누르면 후퇴해. 지금까지 얻은 경험치와 골드는 남아.'); setTimeout(() => confirmFlee = false, 2500); } },
+    again: () => { const m = B.mode, i = B.mode === 'stage' ? B.sid : B.isl; startBattle(m, i); },
+    'brief-again': () => { const sid = B.sid; leaveBattle(); sheet = { type: 'brief', id: sid }; render(); },
+    leave: () => leaveBattle(),
+  };
+  if (A[a]) A[a]();
+});
+let confirmFlee = false;
+document.addEventListener('keydown', e => {
+  if (!B) { if (e.key === 'Escape' && sheet) { sheet = null; render(); } if (e.key === 'Enter' && sheet && sheet.type === 'profile' && e.target.id === 'pf-name') { e.preventDefault(); $('[data-act="save-profile"]').click(); } return; }
+  if (e.target && e.target.tagName === 'INPUT') return;
+  if (B.phase === 'ask') {
+    if (B.q.kind === 'num') {
+      if (/^\d$/.test(e.key)) keyIn(e.key);
+      else if (e.key === '-' || e.key === '−') keyIn('-');
+      else if (e.key === '/') { e.preventDefault(); keyIn('/'); }
+      else if (e.key === '.') keyIn('.');
+      else if (e.key === 'Backspace') { e.preventDefault(); keyIn('del'); }
+      else if (e.key === 'Enter') { e.preventDefault(); submitNum(); }
+    } else if (/^[1-4]$/.test(e.key)) { const i = +e.key - 1; if (i < B.q.opts.length) answer(i === B.q.ci, B.q.opts[i], i); }
+  } else if (B.phase === 'fb' && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); next(); }
+});
+
+render();
+initRemote();
+</script>
+</body></html>
